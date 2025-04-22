@@ -15,11 +15,13 @@ statement
     ;
 
 dataLoadStmt : LOAD_DATA '(' STRING (',' loadOption)* ')' SEMICOLON ;
+LOAD_DATA : 'load_data' ;
 loadOption : IDENTIFIER ':' expr ;
 
 variableDeclaration : VAR IDENTIFIER FOLLOWS distributionExpr SEMICOLON ;
+FOLLOWS : 'follows' ;
 variableAssignment : VAR IDENTIFIER '=' expr SEMICOLON ;
-
+VAR : 'var' ;
 distributionExpr 
     : NORMAL '(' expr ',' expr ')'
     | LOGNORMAL '(' expr ',' expr ')'
@@ -31,59 +33,6 @@ distributionExpr
     | MULTINOMIAL '(' expr (',' expr)* ')'
     | FITTED_TO ':' dataRef
     ;
-
-dataRef : DATA '.' IDENTIFIER ;
-
-queryStmt : QUERY queryExpr SEMICOLON ;
-queryExpr 
-    : 'P' '(' conditionalExpr ')'
-    | 'E' '(' expr ('|' conditionalExpr)? ')'
-    | 'correlation' '(' expr ',' expr ')'
-    | 'outliers' '(' expr (',' expr)* ')'
-    ;
-
-clusteringStmt : CLUSTER '(' IDENTIFIER ',' clusteringOptions ')' SEMICOLON ;
-clusteringOptions : 'dimensions' ':' '[' expr (',' expr)* ']' ',' 'k' ':' INTEGER ;
-
-associationStmt : FIND_ASSOCIATIONS '(' IDENTIFIER (',' associationOption)* ')' SEMICOLON ;
-associationOption : 'min_support' ':' expr | 'min_confidence' ':' expr ;
-
-classificationStmt : CLASSIFY '(' IDENTIFIER ',' 'target' ':' expr (',' classifierOption)* ')' SEMICOLON ;
-classifierOption : IDENTIFIER ':' expr ;
-
-expr : conditionalExpr ;
-conditionalExpr : logicalOrExpr ('?' logicalOrExpr ':' logicalOrExpr)? ;
-logicalOrExpr : logicalAndExpr (OR logicalAndExpr)* ;
-logicalAndExpr : comparisonExpr (AND comparisonExpr)* ;
-comparisonExpr : addExpr (comparisonOp addExpr)? ;
-addExpr : multExpr (('+' | '-') multExpr)* ;
-multExpr : powExpr (('*' | '/') powExpr)* ;
-powExpr : unaryExpr ('^' unaryExpr)* ;
-unaryExpr : '-' unaryExpr | primary ;
-primary : INTEGER | FLOAT | IDENTIFIER ('.' IDENTIFIER)* | '(' expr ')' ;
-comparisonOp : '>' | '<' | '>=' | '<=' | '==' | '!=' ;
-
-commentStmt : COMMENT ;
-
-// Keywords
-LOAD_DATA : 'load_data' ;
-VAR : 'var' ;
-FOLLOWS : 'follows' ;
-QUERY : 'query' ;
-CLUSTER : 'cluster' ;
-FIND_ASSOCIATIONS : 'find_associations' ;
-CLASSIFY : 'classify' ;
-DATA : 'data' ;
-
-// Lexer Rules
-COMMENT : '//' ~[\r\n]* ;
-STRING : '"' (~["\r\n])* '"' ;
-IDENTIFIER : [a-zA-Z][a-zA-Z0-9_]* ;
-INTEGER : [0-9]+ ;
-FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+ ;
-
-
-// Distribution types
 NORMAL : 'Normal' ;
 LOGNORMAL : 'LogNormal' ;
 POISSON : 'Poisson' ;
@@ -93,13 +42,65 @@ GAMMA : 'Gamma' ;
 BETA : 'Beta' ;
 MULTINOMIAL : 'Multinomial' ;
 FITTED_TO : 'fitted_to' ;
+dataRef : DATA '.' IDENTIFIER ;
+DATA : 'data' ;
 
-// Logical operators
-AND : 'and' ;
+queryStmt : QUERY queryExpr SEMICOLON ;
+QUERY : 'query' ;
+queryExpr 
+    : P '(' expr (OR_OP expr)? ')'            // Allow conditional P(A | B)
+    | E '(' expr (OR_OP expr)? ')'            // Allow conditional E(X | Y)
+    | CORRELATION '(' expr ',' expr ')'
+    | OUTLIERS '(' expr (',' expr)* ')'
+    ;
+P: 'P';
+E: 'E';
+CORRELATION: 'correlation';
+OUTLIERS: 'outliers';
+OR_OP : '|' ;
+
+clusteringStmt : CLUSTER '(' IDENTIFIER ',' clusteringOptions ')' SEMICOLON ;
+CLUSTER : 'cluster' ;
+clusteringOptions : 'dimensions' ':' '[' expr (',' expr)* ']' ',' 'k' ':' INTEGER ;
+
+associationStmt : FIND_ASSOCIATIONS '(' IDENTIFIER (',' associationOption)* ')' SEMICOLON ;
+FIND_ASSOCIATIONS : 'find_associations' ;
+associationOption : 'min_support' ':' expr | 'min_confidence' ':' expr ;
+
+classificationStmt : CLASSIFY '(' IDENTIFIER ',' 'target' ':' expr (',' classifierOption)* ')' SEMICOLON ;
+CLASSIFY : 'classify' ;
+classifierOption : IDENTIFIER ':' expr ;
+
+expr : conditionalExpr ;
+conditionalExpr : logicalOrExpr ('?' logicalOrExpr ':' logicalOrExpr)? ;
+logicalOrExpr : logicalAndExpr (OR logicalAndExpr)* ;
 OR : 'or' ;
-NOT : 'not' ;
+logicalAndExpr : comparisonExpr (AND comparisonExpr)* ;
+AND : 'and' ;
+comparisonExpr : addExpr (comparisonOp addExpr)? ;
+comparisonOp : '>' | '<' | '>=' | '<=' | '==' | '!=' ;
 
-// Punctuation
+addExpr : multExpr (('+' | '-') multExpr)* ;
+multExpr : powExpr (('*' | '/') powExpr)* ;
+powExpr : unaryExpr ('^' unaryExpr)* ;
+unaryExpr : '-' unaryExpr | primary ;
+primary : INTEGER | FLOAT | IDENTIFIER ('.' IDENTIFIER)* | '(' expr ')' ;
+
+commentStmt : COMMENT ;
+
+// Lexer Rules
+COMMENT : '//' ~[\n]* '\n'? -> skip ;
+STRING : '"' (~["\r\n])* '"' ;
+IDENTIFIER : [a-zA-Z][a-zA-Z0-9_]* ;
+INTEGER : [0-9]+ ;
+FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+ ;
+
 SEMICOLON : ';' ;
+LPAREN : '(' ;
+RPAREN : ')' ;
+COMMA : ',' ;
+COLON : ':' ;
+LBRACK : '[' ;
+RBRACK : ']' ;
 
 WS : [ \t\r\n]+ -> skip ;

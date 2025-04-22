@@ -661,7 +661,7 @@ var churnRisk = (daysSinceLastPurchase > 60) and (purchaseFrequency < 1);
 // Mine insights with probabilistic queries
 query P(highValueCustomer | age > 40);
 query E(lifetimeValue | churnRisk);
-query cluster(customers, dimensions: [age, income, purchaseFrequency], k: 3);
+cluster(customers, dimensions: [age, income, purchaseFrequency], k: 3);
 """
         self.code_editor.delete("1.0", tk.END)
         self.code_editor.insert(tk.END, sample_code)
@@ -710,7 +710,7 @@ var failureRisk = abnormalTemperature and highVibration;
 // Maintenance queries
 query P(failureRisk | operatingHours > 5000);
 query E(timeToFailure | abnormalTemperature);
-query find_associations(sensorReadings, min_support: 0.3, min_confidence: 0.8);
+find_associations(sensorReadings, min_support: 0.3, min_confidence: 0.8);
 """
             self.code_editor.insert(tk.END, maintenance_code)
             
