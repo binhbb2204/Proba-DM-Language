@@ -1,0 +1,17 @@
+// Customer Segmentation Example
+load_data("customer_database.csv");
+
+// Define probabilistic variables
+var age follows EmpiricalDistribution(data.age);
+var income follows LogNormal(10, 0.5);
+var purchaseFrequency follows Poisson(3.2);
+
+// Define customer segments
+var highValueCustomer = (income > 75000) and (purchaseFrequency > 5);
+var churnRisk = (daysSinceLastPurchase > 60) and (purchaseFrequency < 1);
+
+// Mine insights with probabilistic queries
+query P(highValueCustomer | age > 40);
+query E(lifetimeValue | churnRisk);
+query cluster(customers, dimensions: [age, income, purchaseFrequency], k: 3);
+
