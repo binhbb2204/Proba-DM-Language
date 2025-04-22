@@ -65,13 +65,6 @@ comparisonOp : '>' | '<' | '>=' | '<=' | '==' | '!=' ;
 
 commentStmt : COMMENT ;
 
-// Lexer Rules
-COMMENT : '//' ~[\r\n]* ;
-STRING : '"' (~["\r\n])* '"' ;
-IDENTIFIER : [a-zA-Z][a-zA-Z0-9_]* ;
-INTEGER : [0-9]+ ;
-FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+ ;
-
 // Keywords
 LOAD_DATA : 'load_data' ;
 VAR : 'var' ;
@@ -81,6 +74,14 @@ CLUSTER : 'cluster' ;
 FIND_ASSOCIATIONS : 'find_associations' ;
 CLASSIFY : 'classify' ;
 DATA : 'data' ;
+
+// Lexer Rules
+COMMENT : '//' ~[\r\n]* ;
+STRING : '"' (~["\r\n])* '"' ;
+IDENTIFIER : [a-zA-Z][a-zA-Z0-9_]* ;
+INTEGER : [0-9]+ ;
+FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+ ;
+
 
 // Distribution types
 NORMAL : 'Normal' ;
