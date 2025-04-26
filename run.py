@@ -18,7 +18,7 @@ import pandas as pd
 DIR = os.path.dirname(__file__)
 # ANTLR_JAR = 'C:/JavaLib/antlr-4.13.2-complete.jar' 
 # t để tên folder lib ANTLR là JavaLibrary nên mn để ý sửa lại với máy mn nha :v
-ANTLR_JAR = 'C:/JavaLibrary/antlr-4.13.2-complete.jar'
+ANTLR_JAR = 'C:/JavaLib/antlr-4.13.2-complete.jar'
 CPL_DEST = 'CompiledFiles'
 SRC = 'ProbDataMine.g4'
 TESTS = os.path.join(DIR, './tests')
