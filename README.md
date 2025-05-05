@@ -73,5 +73,5 @@ python run.py gen or py run.py gen
 ```bash
 py main.py
 ```
-Then navigate to: ```http://localhost:5000```
+Then navigate to: ```http://localhost:5000``` or ```http://***.*.*.*:5000```
 
