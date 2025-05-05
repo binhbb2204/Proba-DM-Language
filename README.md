@@ -54,7 +54,7 @@ pip install mlxtend
 ### 2. ANTLR Setup
 - Download ANTLR from [ANTLR](https://www.antlr.org/)
 - Ensure Java is installed on your system
-- Update the ANTLR JAR path in constants.py according to your local library folder: 
+- Update the ANTLR JAR path in constants.py according to your local library folder. For example, mine is: 
 ```bash
 ANTLR_JAR = "C:\\JavaLibrary\\antlr-4.13.2-complete.jar"
 ```
@@ -65,9 +65,7 @@ ANTLR_JAR = "C:\\JavaLibrary\\antlr-4.13.2-complete.jar"
 ## Running the Application
 ### 1. Generate the ANTLR Parser
 Before running the application, generate the parser:
-```bash
-python run.py gen or py run.py gen
-```
+```python run.py gen``` or ```py run.py gen```
 
 ### 2. Start the Web Interface
 ```bash
