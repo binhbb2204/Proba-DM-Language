@@ -37,6 +37,158 @@ document.addEventListener('DOMContentLoaded', function() {
     clearButton.addEventListener('click', () => clearEditor());
     clearConsoleButton.addEventListener('click', () => clearConsole());
 
+    // CSV Upload functionality
+    const uploadForm = document.getElementById('upload-form');
+    const csvFileInput = document.getElementById('csv-file');
+    const uploadSubmitButton = document.getElementById('upload-submit');
+    const uploadProgressBar = document.querySelector('.upload-progress .progress-bar');
+    const uploadProgressContainer = document.querySelector('.upload-progress');
+    const uploadSuccessAlert = document.querySelector('.upload-success');
+    const uploadErrorAlert = document.querySelector('.upload-error');
+    const csvFilesList = document.getElementById('csv-files-list');
+    const uploadModal = document.getElementById('uploadModal');
+
+    // Refresh CSV files list when the modal is opened
+    const uploadModalInstance = new bootstrap.Modal(uploadModal);
+    uploadModal.addEventListener('shown.bs.modal', function () {
+        refreshCsvFilesList();
+    });
+
+    // Handle file upload
+    uploadSubmitButton.addEventListener('click', function() {
+        const file = csvFileInput.files[0];
+        if (!file) {
+            showUploadError('Please select a CSV file to upload.');
+            return;
+        }
+        
+        if (!file.name.endsWith('.csv')) {
+            showUploadError('Only CSV files are allowed.');
+            return;
+        }
+        
+        uploadFile(file);
+    });
+
+    // Function to refresh the list of CSV files
+    function refreshCsvFilesList() {
+        fetch('/list-csv-files')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.files.length === 0) {
+                        csvFilesList.innerHTML = '<div class="text-muted">No CSV files available.</div>';
+                    } else {
+                        csvFilesList.innerHTML = data.files.map(file => 
+                            `<button type="button" class="list-group-item list-group-item-action csv-file-item" data-filename="${file}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text me-2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                ${file}
+                            </button>`
+                        ).join('');
+                        
+                        // Add click event for file items
+                        document.querySelectorAll('.csv-file-item').forEach(item => {
+                            item.addEventListener('click', function() {
+                                const filename = this.dataset.filename;
+                                insertFileReferenceToEditor(filename);
+                            });
+                        });
+                    }
+                } else {
+                    csvFilesList.innerHTML = `<div class="text-danger">Error: ${data.message}</div>`;
+                }
+            })
+            .catch(error => {
+                csvFilesList.innerHTML = `<div class="text-danger">Error loading file list: ${error.message}</div>`;
+            });
+    }
+
+    // Insert file reference to the code editor
+    function insertFileReferenceToEditor(filename) {
+        // Get the current cursor position
+        const cursor = codeEditor.getCursor();
+        
+        // Insert the file reference at the cursor position
+        codeEditor.replaceRange(`load_data("${filename}", name: dataset_name);`, cursor);
+        
+        // Close the modal and focus back on the editor
+        uploadModalInstance.hide();
+        codeEditor.focus();
+        
+        // Log to console
+        logToConsole('info', `Added reference to ${filename}`);
+    }
+
+    // Upload file using fetch API
+    function uploadFile(file) {
+        // Reset alerts
+        resetUploadAlerts();
+        
+        // Show progress
+        uploadProgressContainer.classList.remove('d-none');
+        uploadProgressBar.style.width = '0%';
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        fetch('/upload-csv', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            // Set progress to 100% when complete
+            uploadProgressBar.style.width = '100%';
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showUploadSuccess(`File ${data.filename} uploaded successfully.`);
+                csvFileInput.value = ''; // Clear the file input
+                refreshCsvFilesList(); // Refresh the file list
+                logToConsole('success', `Uploaded file: ${data.filename}`);
+            } else {
+                showUploadError(data.message);
+                logToConsole('error', `Upload failed: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            showUploadError(`Upload failed: ${error.message}`);
+            logToConsole('error', `Upload error: ${error.message}`);
+        })
+        .finally(() => {
+            // Hide progress after a short delay
+            setTimeout(() => {
+                uploadProgressContainer.classList.add('d-none');
+            }, 1000);
+        });
+    }
+
+    // Helper functions for showing upload status
+    function resetUploadAlerts() {
+        uploadSuccessAlert.classList.add('d-none');
+        uploadErrorAlert.classList.add('d-none');
+        uploadSuccessAlert.textContent = '';
+        uploadErrorAlert.textContent = '';
+    }
+
+    function showUploadSuccess(message) {
+        uploadSuccessAlert.textContent = message;
+        uploadSuccessAlert.classList.remove('d-none');
+        uploadErrorAlert.classList.add('d-none');
+    }
+
+    function showUploadError(message) {
+        uploadErrorAlert.textContent = message;
+        uploadErrorAlert.classList.remove('d-none');
+        uploadSuccessAlert.classList.add('d-none');
+    }
+
     // Function to load sample code snippets
     function loadSampleCodeSnippets() {
         fetch('/samples')

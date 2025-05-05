@@ -81,15 +81,23 @@
                                 </svg>
                                 Clear
                             </button>
+                            <button class="btn btn-outline-primary btn-sm" id="upload-button" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-upload">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                Upload CSV
+                            </button>
                         </div>
                     </div>
                     <div class="card-body p-0">
                         <textarea id="code-editor" class="form-control">// Write your PQL code here
-load_data("sample.csv", name: "customer_data");
+load_data("sample.csv", name: customer_data);
 
 // Query basic statistics
-query correlation(data.age, data.income);
-</textarea>
+query correlation(customer_data.age, customer_data.income);
+                        </textarea>
                     </div>
                 </div>
             </div>
@@ -227,6 +235,46 @@ query outliers(x);</code></pre>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadModalLabel">Upload CSV File</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="csv-file" class="form-label">Select CSV File</label>
+                            <input class="form-control" type="file" id="csv-file" accept=".csv">
+                            <div class="form-text">Only CSV files are allowed.</div>
+                        </div>
+                        
+                        <div class="upload-progress d-none">
+                            <div class="progress mb-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-success upload-success d-none" role="alert"></div>
+                        <div class="alert alert-danger upload-error d-none" role="alert"></div>
+                    </form>
+                    
+                    <div class="mt-4">
+                        <h6>Available CSV Files</h6>
+                        <div id="csv-files-list" class="list-group">
+                            <div class="text-muted">Loading files...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="upload-submit">Upload</button>
                 </div>
             </div>
         </div>

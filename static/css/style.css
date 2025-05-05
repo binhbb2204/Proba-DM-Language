@@ -549,6 +549,35 @@ body{
     color: var(--accent-teal);
 }
 
+/* File Upload Styles */
+.csv-file-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.csv-file-item:hover {
+    background-color: var(--accent-blue-subtle);
+    color: var(--accent-blue);
+}
+
+.upload-progress {
+    margin-top: 1rem;
+}
+
+.progress {
+    height: 8px;
+    background-color: var(--bg-tertiary);
+}
+
+.progress-bar {
+    background-color: var(--accent-blue);
+}
+
 /* ===== Modal Styling ===== */
 .modal-content{
     background-color: var(--bg-secondary);

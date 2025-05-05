@@ -141,15 +141,30 @@ class PQLExecutor:
             # Load the data
             try:
                 import pandas as pd
-                df = pd.read_csv(filename)
+                import os
+                
+                # First try loading the file directly
+                try:
+                    df = pd.read_csv(filename)
+                    actual_filename = filename
+                except FileNotFoundError:
+                    # If that fails, try looking in the data/ directory
+                    data_path = os.path.join('data', filename)
+                    df = pd.read_csv(data_path)
+                    actual_filename = data_path
+                
                 self.data[dataset_name] = df
                 
+                # Prepare preview data (first few rows)
+                preview_rows = min(5, len(df))
+                preview_data = df.head(preview_rows).to_dict('records')
+                
                 return {
-                    'type': 'data_load',
-                    'filename': filename,
-                    'dataset_name': dataset_name,
+                    'type': 'load_data',
+                    'dataset': dataset_name,
                     'rows': len(df),
-                    'columns': list(df.columns)
+                    'columns': list(df.columns),
+                    'preview': preview_data
                 }
             except Exception as e:
                 return {'type': 'error', 'message': f'Error loading data: {str(e)}'}

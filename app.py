@@ -2,6 +2,7 @@ import os
 import json
 import traceback
 import sys
+from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify
 
 # Ensure CompiledFiles is in the path
@@ -24,6 +25,53 @@ executor = PQLExecutor()
 def index():
     """Render the main application page"""
     return render_template('index.html')
+
+# Add these routes to your Flask application
+@app.route('/upload-csv', methods=['POST'])
+def upload_csv():
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'message': 'No file part'})
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'})
+    
+    if file and file.filename.endswith('.csv'):
+        # Ensure data directory exists
+        os.makedirs('data', exist_ok=True)
+        
+        # Secure the filename and save the file
+        filename = secure_filename(file.filename)
+        file_path = os.path.join('data', filename)
+        
+        file.save(file_path)
+        return jsonify({
+            'success': True, 
+            'message': f'File {filename} uploaded successfully',
+            'filename': filename
+        })
+    else:
+        return jsonify({'success': False, 'message': 'Only CSV files are allowed'})
+
+@app.route('/list-csv-files')
+def list_csv_files():
+    try:
+        # Ensure data directory exists
+        os.makedirs('data', exist_ok=True)
+        
+        # Get all CSV files in the data directory
+        csv_files = [f for f in os.listdir('data') if f.endswith('.csv')]
+        
+        return jsonify({
+            'success': True,
+            'files': csv_files
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
 
 @app.route('/parse', methods=['POST'])
 def parse_pql():
@@ -109,7 +157,7 @@ def get_samples():
     samples = [
         {
             'name': 'Basic Data Load',
-            'code': 'load_data("sample.csv", name: "customer_data");\n\n// View basic statistics\nquery correlation(data.age, data.income);'
+            'code': 'load_data("sample.csv", name: customer_data);\n\n// View basic statistics\nquery correlation(customer_data.age, customer_data.income);'
         },
         {
             'name': 'Probabilistic Variables',
@@ -117,15 +165,15 @@ def get_samples():
         },
         {
             'name': 'Clustering Example',
-            'code': 'load_data("sample.csv", name: "customer_data");\n\n// Perform clustering\ncluster(customer_data, dimensions: [age, income, spending], k: 3);'
+            'code': 'load_data("sample.csv", name: customer_data);\n\n// Perform clustering\ncluster(customer_data, dimensions: [age, income, spending], k: 3);'
         },
         {
             'name': 'Association Rules',
-            'code': 'load_data("sample.csv", name: "transaction_data");\n\n// Find association rules\nfind_associations(transaction_data, min_support: 0.1, min_confidence: 0.5);'
+            'code': 'load_data("sample.csv", name: transaction_data);\n\n// Find association rules\nfind_associations(transaction_data, min_support: 0.1, min_confidence: 0.5);'
         },
         {
             'name': 'Classification Model',
-            'code': 'load_data("sample.csv", name: "customer_data");\n\n// Build a classification model\nclassify(customer_data, target: is_customer, classifier: "random_forest");'
+            'code': 'load_data("sample.csv", name: customer_data);\n\n// Build a classification model\nclassify(customer_data, target: is_customer, classifier: random_forest);'
         }
     ]
     
