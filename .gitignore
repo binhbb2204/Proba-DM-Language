@@ -33,3 +33,5 @@ var/
 # OS related
 .DS_Store
 Thumbs.db
+
+constants.py

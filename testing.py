@@ -4,8 +4,8 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
-from CompiledFiles.SampleLexer import SampleLexer
-from CompiledFiles.SampleParser import SampleParser
+from CompiledFiles.ProbDataMineLexer import ProbDataMineLexer
+from CompiledFiles.ProbDataMineParser import ProbDataMineParser
 
 # Define constants
 DIR = os.path.dirname(__file__)
@@ -31,9 +31,9 @@ def generateAntlr2Python():
 # Function to parse PQL input
 def parse_pql(input_text):
     input_stream = InputStream(input_text)
-    lexer = SampleLexer(input_stream)
+    lexer = ProbDataMineLexer(input_stream)
     stream = CommonTokenStream(lexer)
-    parser = SampleParser(stream)
+    parser = ProbDataMineParser(stream)
     parser.removeErrorListeners()
     error_collector = SyntaxErrorCollector()
     parser.addErrorListener(error_collector)
