@@ -54,7 +54,7 @@ pip install mlxtend
 ### 2. ANTLR Setup
 - Download ANTLR from [ANTLR](https://www.antlr.org/)
 - Ensure Java is installed on your system
-- Update the ANTLR JAR path in constants.py according to your local library folder. For example, mine is: 
+- Update the ANTLR JAR path in ```constants.py``` according to your local library folder. For example, mine is: 
 ```bash
 ANTLR_JAR = "C:\\JavaLibrary\\antlr-4.13.2-complete.jar"
 ```
