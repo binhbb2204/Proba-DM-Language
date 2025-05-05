@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PQL - Probabilistic Query Language</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-database">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                </svg>
+                PQL - Probabilistic Query Language
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="samplesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Examples
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark" id="samples-menu" aria-labelledby="samplesDropdown">
+                            <li><a class="dropdown-item" href="#" data-sample="1">Loading...</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#helpModal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-help-circle">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            Help
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <!-- Left Panel: Code Editor -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 pql-editor-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">PQL Editor</h5>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-info btn-sm" id="run-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-play">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                Run
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="parse-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                Check Syntax
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="clear-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <textarea id="code-editor" class="form-control">// Write your PQL code here
+load_data("sample.csv", name: "customer_data");
+
+// Query basic statistics
+query correlation(data.age, data.income);
+</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="result-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="output-tab" data-bs-toggle="tab" data-bs-target="#output" type="button" role="tab" aria-controls="output" aria-selected="true">Output</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="parse-tree-tab" data-bs-toggle="tab" data-bs-target="#parse-tree" type="button" role="tab" aria-controls="parse-tree" aria-selected="false">Parse Tree</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="visualization-tab" data-bs-toggle="tab" data-bs-target="#visualization" type="button" role="tab" aria-controls="visualization" aria-selected="false">Visualization</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="ast-tab" data-bs-toggle="tab" data-bs-target="#ast" type="button" role="tab" aria-controls="ast" aria-selected="false">AST</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="result-tab-content">
+                            <!-- Output Tab -->
+                            <div class="tab-pane fade show active" id="output" role="tabpanel" aria-labelledby="output-tab">
+                                <div id="output-content" class="result-content">
+                                    <div class="alert alert-secondary">
+                                        <p>Run your code to see results here.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Parse Tree Tab -->
+                            <div class="tab-pane fade" id="parse-tree" role="tabpanel" aria-labelledby="parse-tree-tab">
+                                <div id="parse-tree-content" class="result-content">
+                                    <div class="alert alert-secondary">
+                                        <p>Parse your code to see the parse tree.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Visualization Tab -->
+                            <div class="tab-pane fade" id="visualization" role="tabpanel" aria-labelledby="visualization-tab">
+                                <div id="visualization-content" class="result-content">
+                                    <div class="alert alert-secondary">
+                                        <p>Run your code to see visualizations.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AST Tab -->
+                            <div class="tab-pane fade" id="ast" role="tabpanel" aria-labelledby="ast-tab">
+                                <div id="ast-content" class="result-content">
+                                    <div class="alert alert-secondary">
+                                        <p>Run your code to see the abstract syntax tree.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Console -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card mt-2 mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Console</h5>
+                        <button class="btn btn-sm btn-outline-secondary" id="clear-console-button">Clear</button>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="console-output" class="console-output">
+                            <div class="text-muted">Console output will appear here.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">PQL Help Documentation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h4>Probabilistic Query Language (PQL)</h4>
+                    <p>PQL is a domain-specific language for probabilistic data mining and analysis.</p>
+                    
+                    <h5>Basic Syntax</h5>
+                    <div class="mb-3">
+                        <h6>Data Loading:</h6>
+                        <pre><code>load_data("filename.csv", name: "dataset_name");</code></pre>
+                        
+                        <h6>Variable Declaration:</h6>
+                        <pre><code>var x follows Normal(0, 1);</code></pre>
+                        
+                        <h6>Variable Assignment:</h6>
+                        <pre><code>var y = x * 2 + 3;</code></pre>
+                        
+                        <h6>Queries:</h6>
+                        <pre><code>query P(x > 0);
+query E(x);
+query correlation(x, y);
+query outliers(x);</code></pre>
+                        
+                        <h6>Clustering:</h6>
+                        <pre><code>cluster(dataset_name, dimensions: [age, income], k: 3);</code></pre>
+                        
+                        <h6>Association Rules:</h6>
+                        <pre><code>find_associations(dataset_name, min_support: 0.1, min_confidence: 0.5);</code></pre>
+                        
+                        <h6>Classification:</h6>
+                        <pre><code>classify(dataset_name, target: is_customer, classifier: "decision_tree");</code></pre>
+                    </div>
+                    
+                    <h5>Supported Distributions</h5>
+                    <ul>
+                        <li><code>Normal(mean, std)</code> - Normal distribution</li>
+                        <li><code>LogNormal(meanlog, sdlog)</code> - Log-normal distribution</li>
+                        <li><code>Poisson(lambda)</code> - Poisson distribution</li>
+                        <li><code>Bernoulli(p)</code> - Bernoulli distribution</li>
+                        <li><code>Gamma(shape, scale)</code> - Gamma distribution</li>
+                        <li><code>Beta(alpha, beta)</code> - Beta distribution</li>
+                        <li><code>Multinomial(p1, p2, ...)</code> - Multinomial distribution</li>
+                        <li><code>EmpiricalDistribution(data.column)</code> - Empirical distribution from data</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap and Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/visualization.js') }}"></script>
+</body>
+</html>
