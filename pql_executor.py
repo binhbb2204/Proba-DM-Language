@@ -156,8 +156,7 @@ class PQLExecutor:
                 self.data[dataset_name] = df
                 
                 # Prepare preview data (first few rows)
-                preview_rows = min(5, len(df))
-                preview_data = df.head(preview_rows).to_dict('records')
+                preview_data = df.to_dict('records')
                 
                 return {
                     'type': 'load_data',
