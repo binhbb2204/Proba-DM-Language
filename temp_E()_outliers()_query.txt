@@ -1,0 +1,9 @@
+Simple case
+var x follows Normal(10, 2);
+query E(x);
+query outliers(x);
+
+Data reference:
+load_data("sample.csv", name: customer_data);
+query E(customer_data.age);
+query outliers(customer_data.age);

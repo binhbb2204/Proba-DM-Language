@@ -7,8 +7,12 @@ if not generate_parser():
     print("Failed to generate parser files. Exiting.")
     sys.exit(1)
 
+# Add current directory to Python path
+project_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_dir)
+
 # Add CompiledFiles to Python path to ensure imports work
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'CompiledFiles'))
+sys.path.insert(0, os.path.join(project_dir, 'CompiledFiles'))
 
 # Now import the app
 from app import app
