@@ -335,7 +335,7 @@ class PQLExecutor:
             elif query_part.startswith('E('):
                 # Expected value query
                 params = query_part[2:-1].strip()
-                return self._execute_expected_value_query(params)
+                return self._execute_expectation_query(params)
                 
             elif query_part.startswith('correlation('):
                 # Correlation query
@@ -355,6 +355,49 @@ class PQLExecutor:
             traceback.print_exc()
             return {'type': 'error', 'message': f'Error executing query: {str(e)}'}
     
+    def _execute_probability_query(self, params):
+        """Execute a probability query P(X > 0)"""
+        if not params:
+            return {'type': 'error', 'message': 'Invalid probability query'}
+            
+        # Handle conditional probability
+        condition = None
+        if len(params) > 1 and '|' in params[0]:
+            # Handle conditional probability
+            variable, condition = params[0].split('|')
+            variable = variable.strip()
+            condition = condition.strip()
+        else:
+            variable = params[0]
+            
+        # Calculate probability
+        try:
+            if variable in self.variables:
+                data = self.variables[variable]
+                if isinstance(data, np.ndarray):
+                    if condition:
+                        # Simplified conditional probability
+                        return {
+                            'type': 'query_result',
+                            'query_type': 'probability',
+                            'variable': variable,
+                            'condition': condition,
+                            'result': float(np.mean(data > 0))  # Placeholder
+                        }
+                    else:
+                        return {
+                            'type': 'query_result',
+                            'query_type': 'probability',
+                            'variable': variable,
+                            'result': float(np.mean(data > 0)),
+                            'visualization': self._generate_probability_visualization(data, variable)
+                        }
+            
+            return {'type': 'error', 'message': f'Cannot compute probability for {variable}'}
+            
+        except Exception as e:
+            return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
+        
     def _execute_correlation_query(self, params):
         """Execute a correlation query"""
         try:
