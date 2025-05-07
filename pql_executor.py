@@ -38,7 +38,7 @@ class PQLExecutor:
             self.variables = {}
             self.distributions = {}
             
-            print("\n[INIT] Cleared data, variables, distributions")
+            # print("\n[INIT] Cleared data, variables, distributions")
 
             # Process the code line by line
             lines = code.strip().split('\n')
@@ -49,10 +49,10 @@ class PQLExecutor:
                 if not line or line.startswith('//'):
                     continue
 
-                print(f"\n[LINE] {line}")
-                print("[STATE BEFORE] data:", self.data)
-                print("[STATE BEFORE] variables:", self.variables)
-                print("[STATE BEFORE] distributions:", self.distributions)
+                # print(f"\n[LINE] {line}")
+                # print("[STATE BEFORE] data:", self.data)
+                # print("[STATE BEFORE] variables:", self.variables)
+                # print("[STATE BEFORE] distributions:", self.distributions)
                 
                 if line.startswith('load_data'):
                     result = self._execute_load_data(line)
@@ -78,16 +78,16 @@ class PQLExecutor:
                     result = self._execute_query(line)
                     results.append(result)
                 
-                print("[STATE AFTER] data:", self.data)
-                print("[STATE AFTER] variables:", self.variables)
-                print("[STATE AFTER] distributions:", self.distributions)
+                # print("[STATE AFTER] data:", self.data)
+                # print("[STATE AFTER] variables:", self.variables)
+                # print("[STATE AFTER] distributions:", self.distributions)
 
                 # Add other statement types as needed
             
-            print("\n[FINAL STATE]")
-            print("data:", self.data)
-            print("variables:", self.variables)
-            print("distributions:", self.distributions)
+            # print("\n[FINAL STATE]")
+            # print("data:", self.data)
+            # print("variables:", self.variables)
+            # print("distributions:", self.distributions)
 
             return {
                 'success': True,
@@ -375,72 +375,222 @@ class PQLExecutor:
             traceback.print_exc()
             return {'type': 'error', 'message': f'Error executing query: {str(e)}'}
     
+    # def _execute_probability_query(self, params):
+    #     """Execute a probability query P(X > 0)"""
+    #     print("\n--- Executing Probability Query ---")
+    #     print(f"params: {params}")
+    #     if isinstance(params, str):
+    #         params = [params]
+    #     if not params:
+    #         print("Error: No parameters provided.")
+    #         return {'type': 'error', 'message': 'Invalid probability query'}
+            
+    #     # Handle conditional probability
+    #     condition = None
+    #     if len(params) > 1 and '|' in params[0]:
+    #         # Handle conditional probability
+    #         variable, condition = params[0].split('|')
+    #         variable = variable.strip()
+    #         condition = condition.strip()
+    #         print(f"Conditional Probability Detected")
+    #         print(f"Variable: {variable}")
+    #         print(f"Condition: {condition}")
+    #     else:
+    #         variable = params[0]
+    #         print(f"Variable: {variable} (no condition)")
+            
+    #     # Calculate probability
+    #     try:
+    #         print("Available variables:", self.variables.keys())
+    #         print(f"Checking if '{variable}' in self.variables")
+    #         if variable in self.variables:
+    #             data = self.variables[variable]
+    #             print(f"Debug: Resolved data type: {type(data)}, shape: {getattr(data, 'shape', None)}")
+    #             print(f"Data for variable '{variable}': {data}")
+    #             print(f"Data type: {type(data)}")
+    #             if isinstance(data, np.ndarray):
+    #                 if condition:
+    #                     # Simplified conditional probability
+    #                     result = float(np.mean(data > 0))
+    #                     print(f"Conditional result: {result}")
+    #                     return {
+    #                         'type': 'query_result',
+    #                         'query_type': 'probability',
+    #                         'variable': variable,
+    #                         'condition': condition,
+    #                         # 'result': float(np.mean(data > 0))  # Placeholder
+    #                         'result': result,  # Placeholder
+    #                     }
+    #                 else:
+    #                     result = float(np.mean(data > 0))
+    #                     print(f"Unconditional result: {result}")
+    #                     return {
+    #                         'type': 'query_result',
+    #                         'query_type': 'probability',
+    #                         'variable': variable,
+    #                         'result': result,
+    #                         'visualization': self._generate_probability_visualization(data, variable)
+    #                     }
+    #             else:
+    #                 print(f"Variable '{variable}' not found in self.variables.")
+    #                 print(f"Available variables: {list(self.variables.keys())}")
+    #         return {'type': 'error', 'message': f'Cannot compute probability for {variable}'}
+            
+    #     except Exception as e:
+    #         import traceback
+    #         traceback.print_exc()
+    #         return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
     def _execute_probability_query(self, params):
-        """Execute a probability query P(X > 0)"""
-        print("\n--- Executing Probability Query ---")
-        print(f"params: {params}")
-        if isinstance(params, str):
-            params = [params]
-        if not params:
-            print("Error: No parameters provided.")
-            return {'type': 'error', 'message': 'Invalid probability query'}
-            
-        # Handle conditional probability
-        condition = None
-        if len(params) > 1 and '|' in params[0]:
-            # Handle conditional probability
-            variable, condition = params[0].split('|')
-            variable = variable.strip()
-            condition = condition.strip()
-            print(f"Conditional Probability Detected")
-            print(f"Variable: {variable}")
-            print(f"Condition: {condition}")
-        else:
-            variable = params[0]
-            print(f"Variable: {variable} (no condition)")
-            
-        # Calculate probability
-        try:
-            print("Available variables:", self.variables.keys())
-            print(f"Checking if '{variable}' in self.variables")
-            if variable in self.variables:
-                data = self.variables[variable]
-                print(f"Debug: Resolved data type: {type(data)}, shape: {getattr(data, 'shape', None)}")
-                print(f"Data for variable '{variable}': {data}")
-                print(f"Data type: {type(data)}")
-                if isinstance(data, np.ndarray):
-                    if condition:
-                        # Simplified conditional probability
-                        result = float(np.mean(data > 0))
-                        print(f"Conditional result: {result}")
-                        return {
-                            'type': 'query_result',
-                            'query_type': 'probability',
-                            'variable': variable,
-                            'condition': condition,
-                            # 'result': float(np.mean(data > 0))  # Placeholder
-                            'result': result,  # Placeholder
-                        }
-                    else:
-                        result = float(np.mean(data > 0))
-                        print(f"Unconditional result: {result}")
-                        return {
-                            'type': 'query_result',
-                            'query_type': 'probability',
-                            'variable': variable,
-                            'result': result,
-                            'visualization': self._generate_probability_visualization(data, variable)
-                        }
-                else:
-                    print(f"Variable '{variable}' not found in self.variables.")
-                    print(f"Available variables: {list(self.variables.keys())}")
-            return {'type': 'error', 'message': f'Cannot compute probability for {variable}'}
-            
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
+        """Execute a probability query P(X > value) or P(X) for histogram"""
+        print(f"[DEBUG] Received params: {params}")
         
+        if not params:
+            print("[DEBUG] Invalid params (empty)")
+            return {'type': 'error', 'message': 'Invalid probability query'}
+
+        condition = None
+        variable = None
+
+        # Detect condition in params
+        for op in ['>', '<', '==']:
+            if op in params:
+                parts = params.split(op, 1)
+                if len(parts) == 2:
+                    variable = parts[0].strip()
+                    try:
+                        value = float(parts[1].strip())
+                    except ValueError:
+                        print(f"[DEBUG] Could not convert condition value to float: {parts[1].strip()}")
+                        return {'type': 'error', 'message': 'Invalid numeric value in condition'}
+                    condition = (op, value)
+                    print(f"[DEBUG] Parsed condition: variable={variable}, op={op}, value={value}")
+                    break
+
+        if condition is None:
+            variable = params.strip()
+            print(f"[DEBUG] No condition found, using variable: {variable}")
+
+        # Resolve data
+        data = None
+        if variable in self.variables:
+            data = self.variables[variable]
+            print(f"[DEBUG] Found variable '{variable}' in self.variables")
+        else:
+            data = self._resolve_data_reference(variable)
+            if data is not None:
+                print(f"[DEBUG] Resolved variable '{variable}' using _resolve_data_reference")
+
+        if data is None:
+            print(f"[DEBUG] Failed to resolve data for variable: {variable}")
+            return {'type': 'error', 'message': f'Cannot resolve variable {variable}'}
+
+        if not isinstance(data, (np.ndarray, list)):
+            print(f"[DEBUG] Resolved data is not array-like: type={type(data)}")
+            return {'type': 'error', 'message': f'Variable {variable} is not numeric data'}
+
+        data = np.array(data)
+        print(f"[DEBUG] Data sample: {data[:10]} (length: {len(data)})")
+
+        if condition:
+            op, val = condition
+            print(f"[DEBUG] Applying condition: {op} {val}")
+            if op == '>':
+                prob = np.mean(data > val)
+            elif op == '<':
+                prob = np.mean(data < val)
+            elif op == '==':
+                prob = np.mean(data == val)
+            else:
+                print(f"[DEBUG] Unsupported operator: {op}")
+                return {'type': 'error', 'message': f'Unsupported operator {op}'}
+
+            print(f"[DEBUG] Computed probability: {prob}")
+            return {
+                'type': 'query_result',
+                'query_type': 'probability',
+                'variable': variable,
+                'condition': f"{variable} {op} {val}",
+                'result': float(prob),
+                'visualization': self._generate_probability_visualization(data, variable)
+            }
+        else:
+            print("[DEBUG] No condition specified; returning histogram")
+            return {
+                'type': 'query_result',
+                'query_type': 'distribution',
+                'variable': variable,
+                'visualization': self._generate_histogram(data, variable)
+            }
+    # def _execute_probability_query(self, params):
+    #     """Execute a probability query P(X > 0)"""
+    #     print("\n--- Executing Probability Query ---")
+    #     print(f"params: {params}")
+
+    #     if isinstance(params, str):
+    #         params = [params]
+    #     if not params:
+    #         print("Error: No parameters provided.")
+    #         return {'type': 'error', 'message': 'Invalid probability query'}
+
+    #     # Handle conditional probability
+    #     condition = None
+    #     if len(params) > 1 and '|' in params[0]:
+    #         variable, condition = params[0].split('|')
+    #         variable = variable.strip()
+    #         condition = condition.strip()
+    #         print(f"Conditional Probability Detected")
+    #         print(f"Variable: {variable}")
+    #         print(f"Condition: {condition}")
+    #     else:
+    #         variable = params[0].strip()
+    #         print(f"Variable: {variable} (no condition)")
+
+    #     try:
+    #         print("Available variables:", self.variables.keys())
+    #         print(f"Checking if '{variable}' in self.variables")
+            
+    #         data = None
+    #         if variable in self.variables:
+    #             data = self.variables[variable]
+    #             print(f"[DEBUG] Found variable '{variable}' in self.variables")
+    #         else:
+    #             data = self._resolve_data_reference(variable)
+    #             if data is not None:
+    #                 print(f"[DEBUG] Resolved variable '{variable}' using _resolve_data_reference")
+            
+    #         # if data is None or not isinstance(data, np.ndarray):
+    #         #     return {'type': 'error', 'message': f'Cannot compute probability for {variable}'}
+
+    #         print(f"Data for variable '{variable}': {data}")
+    #         print(f"Data type: {type(data)}")
+
+    #         if condition:
+    #             # This is just a placeholder logic, update with real condition parsing if needed
+    #             result = float(np.mean(data > 0))
+    #             print(f"Conditional result (placeholder): {result}")
+    #             return {
+    #                 'type': 'query_result',
+    #                 'query_type': 'probability',
+    #                 'variable': variable,
+    #                 'condition': condition,
+    #                 'result': result,
+    #             }
+    #         else:
+    #             result = float(np.mean(data > 0))
+    #             print(f"Unconditional result: {result}")
+    #             return {
+    #                 'type': 'query_result',
+    #                 'query_type': 'probability',
+    #                 'variable': variable,
+    #                 'result': result,
+    #                 'visualization': self._generate_probability_visualization(data, variable)
+    #             }
+
+    #     except Exception as e:
+    #         import traceback
+    #         traceback.print_exc()
+    #         return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
+
     def _execute_correlation_query(self, params):
         try:
             if len(params) != 2:
