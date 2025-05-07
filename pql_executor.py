@@ -189,23 +189,27 @@ class PQLExecutor:
             return {'type': 'error', 'message': f'Error parsing load_data statement: {str(e)}'}
 
     def _resolve_data_reference(self, data_ref):
-        """Resolve data reference in the form 'data.column' or 'dataset_name.column'"""
-        if not data_ref or '.' not in data_ref:
+        """Resolve data reference in the form 'data.column', 'dataset_name.column', or just 'dataset_name'"""
+        if data_ref in self.data:
+            # Return the first numeric column as a default
+            numeric_cols = self.data[data_ref].select_dtypes(include=[np.number]).columns
+            if len(numeric_cols) > 0:
+                return self.data[data_ref][numeric_cols[0]].values
             return None
             
-        parts = data_ref.split('.')
-        if len(parts) != 2:
-            return None
+        if '.' in data_ref:
+            parts = data_ref.split('.')
+            if len(parts) != 2:
+                return None
+                
+            dataset_name, column = parts
             
-        dataset_name, column = parts
-        
-        # Handle the case when the dataset is referenced as 'data'
-        if dataset_name == 'data':
-            if 'default' in self.data and column in self.data['default']:
-                return self.data['default'][column].values
-        elif dataset_name in self.data and column in self.data[dataset_name]:
-            return self.data[dataset_name][column].values
-            
+            if dataset_name == 'data':
+                if 'default' in self.data and column in self.data['default']:
+                    return self.data['default'][column].values
+            elif dataset_name in self.data and column in self.data[dataset_name]:
+                return self.data[dataset_name][column].values
+                
         return None
     
     def _execute_variable_declaration(self, statement):
@@ -527,20 +531,25 @@ class PQLExecutor:
             condition = condition.strip()
         else:
             variable = params.strip()
-            
+        
+        print(f"Debug: Processing expectation for variable '{variable}', condition: {condition}")
+        
         # Calculate expectation
         try:
             # Try to resolve from variables first
             data = None
             if variable in self.variables:
+                print(f"Debug: Found variable '{variable}' in variables")
                 data = self.variables[variable]
             else:
                 # Try to resolve as data reference
+                print(f"Debug: Trying to resolve '{variable}' as data reference")
                 data = self._resolve_data_reference(variable)
+                print(f"Debug: Data reference resolution result: {type(data)}")
             
             if data is None or not isinstance(data, np.ndarray):
                 return {'type': 'error', 'message': f'Cannot compute expectation for {variable}'}
-        
+            
             if condition:
                 # Parse and evaluate the condition
                 try:

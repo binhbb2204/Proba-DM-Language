@@ -3,7 +3,12 @@ var x follows Normal(10, 2);
 query E(x);
 query outliers(x);
 
-Data reference:
+Data reference (with passed column)
 load_data("sample.csv", name: customer_data);
 query E(customer_data.age);
 query outliers(customer_data.age);
+
+Data reference (without passed column)
+load_data("customer_database.csv", name: dataset_name);
+query E(dataset_name);
+query outliers(dataset_name);
