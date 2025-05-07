@@ -38,6 +38,8 @@ class PQLExecutor:
             self.variables = {}
             self.distributions = {}
             
+            print("\n[INIT] Cleared data, variables, distributions")
+
             # Process the code line by line
             lines = code.strip().split('\n')
             results = []
@@ -46,10 +48,16 @@ class PQLExecutor:
                 line = line.strip()
                 if not line or line.startswith('//'):
                     continue
+
+                print(f"\n[LINE] {line}")
+                print("[STATE BEFORE] data:", self.data)
+                print("[STATE BEFORE] variables:", self.variables)
+                print("[STATE BEFORE] distributions:", self.distributions)
                 
                 if line.startswith('load_data'):
                     result = self._execute_load_data(line)
                     results.append(result)
+                    testvar = self._execute_variable_declaration(line)
                     
                 elif line.startswith('var') and '=' in line:
                     var_name, error = PQLVariableHandler.parse_variable_assignment(line, self.data, self.variables)
@@ -69,9 +77,18 @@ class PQLExecutor:
                 elif line.startswith('query'):
                     result = self._execute_query(line)
                     results.append(result)
-                    
+                
+                print("[STATE AFTER] data:", self.data)
+                print("[STATE AFTER] variables:", self.variables)
+                print("[STATE AFTER] distributions:", self.distributions)
+
                 # Add other statement types as needed
             
+            print("\n[FINAL STATE]")
+            print("data:", self.data)
+            print("variables:", self.variables)
+            print("distributions:", self.distributions)
+
             return {
                 'success': True,
                 'results': results
@@ -356,7 +373,12 @@ class PQLExecutor:
     
     def _execute_probability_query(self, params):
         """Execute a probability query P(X > 0)"""
+        print("\n--- Executing Probability Query ---")
+        print(f"params: {params}")
+        if isinstance(params, str):
+            params = [params]
         if not params:
+            print("Error: No parameters provided.")
             return {'type': 'error', 'message': 'Invalid probability query'}
             
         # Handle conditional probability
@@ -366,35 +388,52 @@ class PQLExecutor:
             variable, condition = params[0].split('|')
             variable = variable.strip()
             condition = condition.strip()
+            print(f"Conditional Probability Detected")
+            print(f"Variable: {variable}")
+            print(f"Condition: {condition}")
         else:
             variable = params[0]
+            print(f"Variable: {variable} (no condition)")
             
         # Calculate probability
         try:
+            print("Available variables:", self.variables.keys())
+            print(f"Checking if '{variable}' in self.variables")
             if variable in self.variables:
                 data = self.variables[variable]
+                print(f"Data for variable '{variable}': {data}")
+                print(f"Data type: {type(data)}")
                 if isinstance(data, np.ndarray):
                     if condition:
                         # Simplified conditional probability
+                        result = float(np.mean(data > 0))
+                        print(f"Conditional result: {result}")
                         return {
                             'type': 'query_result',
                             'query_type': 'probability',
                             'variable': variable,
                             'condition': condition,
-                            'result': float(np.mean(data > 0))  # Placeholder
+                            # 'result': float(np.mean(data > 0))  # Placeholder
+                            'result': result,  # Placeholder
                         }
                     else:
+                        result = float(np.mean(data > 0))
+                        print(f"Unconditional result: {result}")
                         return {
                             'type': 'query_result',
                             'query_type': 'probability',
                             'variable': variable,
-                            'result': float(np.mean(data > 0)),
+                            'result': result,
                             'visualization': self._generate_probability_visualization(data, variable)
                         }
-            
+                else:
+                    print(f"Variable '{variable}' not found in self.variables.")
+                    print(f"Available variables: {list(self.variables.keys())}")
             return {'type': 'error', 'message': f'Cannot compute probability for {variable}'}
             
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
         
     def _execute_correlation_query(self, params):
