@@ -346,21 +346,25 @@ class PQLExecutor:
             if query_part.startswith('P('):
                 # Probability query
                 params = query_part[2:-1].strip()
+                # print(f"Debug: Processing probability for {params}")
                 return self._execute_probability_query(params)
                 
             elif query_part.startswith('E('):
                 # Expected value query
                 params = query_part[2:-1].strip()
+                print(f"Debug: Processing expectation for {params}")
                 return self._execute_expectation_query(params)
                 
             elif query_part.startswith('correlation('):
                 # Correlation query
                 params = query_part[12:-1].strip().split(',')
+                # print(f"Debug: Processing correlation for {params}")
                 return self._execute_correlation_query(params)
                 
             elif query_part.startswith('outliers('):
                 # Outliers query
                 params = query_part[9:-1].strip().split(',')
+                print(f"Debug: Processing outliers for {params}")
                 return self._execute_outliers_query(params)
                 
             else:
@@ -401,6 +405,7 @@ class PQLExecutor:
             print(f"Checking if '{variable}' in self.variables")
             if variable in self.variables:
                 data = self.variables[variable]
+                print(f"Debug: Resolved data type: {type(data)}, shape: {getattr(data, 'shape', None)}")
                 print(f"Data for variable '{variable}': {data}")
                 print(f"Data type: {type(data)}")
                 if isinstance(data, np.ndarray):
@@ -437,7 +442,6 @@ class PQLExecutor:
             return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
         
     def _execute_correlation_query(self, params):
-        """Execute a correlation query"""
         try:
             if len(params) != 2:
                 return {'type': 'error', 'message': 'Correlation requires exactly 2 parameters'}
@@ -458,25 +462,19 @@ class PQLExecutor:
                 
             # If still not found, return error
             if data1 is None or data2 is None:
-                return {
-                    'type': 'error', 
-                    'message': f'Could not resolve data references: {expr1}, {expr2}'
-                }
+                return {'type': 'error', 'message': f'Could not resolve data references: {expr1}, {expr2}'}
                 
             # Calculate correlation
-            import numpy as np
             corr = np.corrcoef(data1, data2)[0, 1]
             
             return {
-                'type': 'correlation',
-                'expr1': expr1,
-                'expr2': expr2,
-                'value': float(corr)
+                'type': 'query_result',
+                'query_type': 'correlation',
+                'variables': [expr1, expr2],
+                'result': float(corr),
+                'visualization': self._generate_correlation_visualization(data1, data2, expr1, expr2, corr)
             }
-            
         except Exception as e:
-            import traceback
-            traceback.print_exc()
             return {'type': 'error', 'message': f'Error in correlation query: {str(e)}'}
     
     def _generate_probability_visualization(self, data, variable):
@@ -523,39 +521,78 @@ class PQLExecutor:
             
         # Handle conditional expectation
         condition = None
-        if len(params) > 1 and '|' in params[0]:
-            # Handle conditional expectation
-            variable, condition = params[0].split('|')
+        if '|' in params:
+            variable, condition = params.split('|', 1)
             variable = variable.strip()
             condition = condition.strip()
         else:
-            variable = params[0]
+            variable = params.strip()
             
         # Calculate expectation
         try:
+            # Try to resolve from variables first
+            data = None
             if variable in self.variables:
                 data = self.variables[variable]
-                if isinstance(data, np.ndarray):
-                    if condition:
-                        # Simplified conditional expectation
+            else:
+                # Try to resolve as data reference
+                data = self._resolve_data_reference(variable)
+            
+            if data is None or not isinstance(data, np.ndarray):
+                return {'type': 'error', 'message': f'Cannot compute expectation for {variable}'}
+        
+            if condition:
+                # Parse and evaluate the condition
+                try:
+                    # For simple conditions like "Y > 0"
+                    if '>' in condition:
+                        cond_parts = condition.split('>')
+                        cond_var = cond_parts[0].strip()
+                        cond_val = float(cond_parts[1].strip())
+                    
+                        # Get the conditional variable data
+                        cond_data = None
+                        if cond_var in self.variables:
+                            cond_data = self.variables[cond_var]
+                        else:
+                            cond_data = self._resolve_data_reference(cond_var)
+                    
+                        if cond_data is None:
+                            return {'type': 'error', 'message': f'Cannot resolve condition variable {cond_var}'}
+                    
+                        # Create mask for condition
+                        mask = cond_data > cond_val
+                        if np.sum(mask) == 0:
+                            return {'type': 'error', 'message': 'No data points satisfy the condition'}
+                    
+                        # Calculate conditional expectation
+                        conditional_mean = np.mean(data[mask])
+                    
                         return {
                             'type': 'query_result',
                             'query_type': 'expectation',
                             'variable': variable,
                             'condition': condition,
-                            'result': float(np.mean(data))  # Placeholder
+                            'result': float(conditional_mean),
+                            'visualization': self._generate_conditional_expectation_visualization(
+                                data, cond_data, mask, variable, condition, conditional_mean
+                            )
                         }
+                    
+                    # Handle other conditions (==, <)
                     else:
-                        return {
-                            'type': 'query_result',
-                            'query_type': 'expectation',
-                            'variable': variable,
-                            'result': float(np.mean(data)),
-                            'visualization': self._generate_expectation_visualization(data, variable)
-                        }
-            
-            return {'type': 'error', 'message': f'Cannot compute expectation for {variable}'}
-            
+                        return {'type': 'error', 'message': f'Unsupported condition format: {condition}'}
+                except Exception as e:
+                    return {'type': 'error', 'message': f'Error evaluating condition: {str(e)}'}
+            else:
+                # Unconditional expectation
+                return {
+                    'type': 'query_result',
+                    'query_type': 'expectation',
+                    'variable': variable,
+                    'result': float(np.mean(data)),
+                    'visualization': self._generate_expectation_visualization(data, variable)
+                }
         except Exception as e:
             return {'type': 'error', 'message': f'Error in expectation query: {str(e)}'}
     
@@ -563,70 +600,19 @@ class PQLExecutor:
         """Generate visualization for expectation query"""
         plt.figure(figsize=(8, 5))
         
-        plt.hist(data, bins=30, alpha=0.7, color='skyblue', density=True)
-        mean_val = np.mean(data)
-        plt.axvline(x=mean_val, color='r', linestyle='--', 
-                   label=f'E({variable}) = {mean_val:.4f}')
-        plt.legend()
-        plt.title(f"Distribution and Expectation of {variable}")
-        plt.xlabel("Value")
-        plt.ylabel("Density")
-        plt.grid(alpha=0.3)
-        
-        # Save to bytes buffer
-        buffer = io.BytesIO()
-        plt.savefig(buffer, format='png')
-        plt.close()
-        
-        # Convert to base64
-        buffer.seek(0)
-        image_png = buffer.getvalue()
-        buffer.close()
-        
-        return base64.b64encode(image_png).decode('utf-8')
-    
-    def _execute_correlation_query(self, params):
-        """Execute a correlation query"""
-        if len(params) != 2:
-            return {'type': 'error', 'message': 'Correlation query requires two variables'}
-            
-        var1 = params[0].strip()
-        var2 = params[1].strip()
-        
-        try:
-            if var1 in self.variables and var2 in self.variables:
-                data1 = self.variables[var1]
-                data2 = self.variables[var2]
-                
-                if len(data1) == len(data2):
-                    corr_coef = np.corrcoef(data1, data2)[0, 1]
-                    
-                    return {
-                        'type': 'query_result',
-                        'query_type': 'correlation',
-                        'variables': [var1, var2],
-                        'result': float(corr_coef),
-                        'visualization': self._generate_correlation_visualization(data1, data2, var1, var2, corr_coef)
-                    }
-            
-            return {'type': 'error', 'message': f'Cannot compute correlation between {var1} and {var2}'}
-            
-        except Exception as e:
-            return {'type': 'error', 'message': f'Error in correlation query: {str(e)}'}
-    
-    def _generate_correlation_visualization(self, data1, data2, var1, var2, corr):
-        """Generate scatter plot for correlation"""
-        plt.figure(figsize=(8, 5))
-        
-        plt.scatter(data1, data2, alpha=0.6)
-        plt.title(f"Correlation between {var1} and {var2}: {corr:.4f}")
-        plt.xlabel(var1)
-        plt.ylabel(var2)
-        
-        # Add regression line
-        m, b = np.polyfit(data1, data2, 1)
-        x_line = np.linspace(min(data1), max(data1), 100)
-        plt.plot(x_line, m * x_line + b, 'r--')
+        # Handle potential empty or constant data
+        if len(data) == 0:
+            plt.text(0.5, 0.5, "No data available", ha='center', va='center')
+            plt.title(f"Distribution and Expectation of {variable}")
+        else:
+            plt.hist(data, bins=min(30, len(np.unique(data))), alpha=0.7, color='skyblue', density=True)
+            mean_val = np.mean(data)
+            plt.axvline(x=mean_val, color='r', linestyle='--', 
+                       label=f'E({variable}) = {mean_val:.4f}')
+            plt.legend()
+            plt.title(f"Distribution and Expectation of {variable}")
+            plt.xlabel("Value")
+            plt.ylabel("Density")
         
         plt.grid(alpha=0.3)
         
@@ -650,23 +636,40 @@ class PQLExecutor:
         var_name = params[0].strip()
         
         try:
+            # Try to resolve from variables first
+            data = None
             if var_name in self.variables:
                 data = self.variables[var_name]
+            else:
+                # Try to resolve as data reference
+                data = self._resolve_data_reference(var_name)
                 
-                # Simple Z-score based outlier detection
+            # If still not found, return error
+            if data is None:
+                return {'type': 'error', 'message': f'Could not resolve data reference: {var_name}'}
+                
+            # Simple Z-score based outlier detection with error handling
+            try:
                 z_scores = np.abs(stats.zscore(data))
                 outliers = np.where(z_scores > 2.5)[0]
-                
-                return {
-                    'type': 'query_result',
-                    'query_type': 'outliers',
-                    'variable': var_name,
-                    'outlier_indices': outliers.tolist(),
-                    'outlier_count': len(outliers),
-                    'visualization': self._generate_outliers_visualization(data, outliers, var_name)
-                }
-            
-            return {'type': 'error', 'message': f'Cannot find outliers for {var_name}'}
+            except:
+                # Fallback for cases where Z-scores can't be calculated
+                # (e.g., constant data)
+                mean = np.mean(data)
+                std = np.std(data)
+                if std == 0:
+                    outliers = np.array([])
+                else:
+                    outliers = np.where(np.abs(data - mean) > 2.5 * std)[0]
+                    
+            return {
+                'type': 'query_result',
+                'query_type': 'outliers',
+                'variable': var_name,
+                'outlier_indices': outliers.tolist(),
+                'outlier_count': len(outliers),
+                'visualization': self._generate_outliers_visualization(data, outliers, var_name)
+            }
             
         except Exception as e:
             return {'type': 'error', 'message': f'Error in outliers query: {str(e)}'}
@@ -887,3 +890,33 @@ class PQLExecutor:
             
         except Exception as e:
             return {'type': 'error', 'message': f'Error in classification: {str(e)}'}
+
+    def _generate_conditional_expectation_visualization(self, data, cond_data, mask, variable, condition, conditional_mean):
+        """Generate visualization for conditional expectation query"""
+        plt.figure(figsize=(8, 5))
+        
+        # Scatter plot with condition highlighted
+        plt.scatter(cond_data[~mask], data[~mask], alpha=0.3, color='gray', label='Not in condition')
+        plt.scatter(cond_data[mask], data[mask], alpha=0.6, color='blue', label='Satisfies condition')
+        
+        # Add horizontal line for conditional expectation
+        plt.axhline(y=conditional_mean, color='r', linestyle='--', 
+                   label=f'E({variable}|{condition}) = {conditional_mean:.4f}')
+        
+        plt.legend()
+        plt.title(f"Conditional Expectation of {variable} given {condition}")
+        plt.xlabel(condition.split()[0])  # Assuming condition is like "Y > 0"
+        plt.ylabel(variable)
+        plt.grid(alpha=0.3)
+        
+        # Save to bytes buffer
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png')
+        plt.close()
+        
+        # Convert to base64
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+        
+        return base64.b64encode(image_png).decode('utf-8')
