@@ -429,9 +429,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         outputHtml += `<p>Query type: ${result.query_type}</p>`;
                         if (result.query_type === 'probability') {
                             if (result.condition) {
-                                outputHtml += `<p>P(${result.event} | ${result.condition}) = ${result.result.toFixed(4)}</p>`;
+                                outputHtml += `<p>P(${result.variable}) = ${result.result.toFixed(4)}</p>`;
                             } else {
-                                outputHtml += `<p>P(${result.event}) = ${result.result.toFixed(4)}</p>`;
+                                outputHtml += `<p>P(${result.variable}) = ${result.result.toFixed(4)}</p>`;
                             }
                         } else if (result.query_type === 'expectation') {
                             if (result.condition) {
