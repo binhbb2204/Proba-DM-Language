@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import io
 import base64
@@ -444,87 +446,87 @@ class PQLExecutor:
     #         import traceback
     #         traceback.print_exc()
     #         return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
-    def _execute_probability_query(self, params):
-        """Execute a probability query P(X > value) or P(X) for histogram"""
-        print(f"[DEBUG] Received params: {params}")
+    # def _execute_probability_query(self, params):
+    #     """Execute a probability query P(X > value) or P(X) for histogram"""
+    #     print(f"[DEBUG] Received params: {params}")
         
-        if not params:
-            print("[DEBUG] Invalid params (empty)")
-            return {'type': 'error', 'message': 'Invalid probability query'}
+    #     if not params:
+    #         print("[DEBUG] Invalid params (empty)")
+    #         return {'type': 'error', 'message': 'Invalid probability query'}
 
-        condition = None
-        variable = None
+    #     condition = None
+    #     variable = None
 
-        # Detect condition in params
-        for op in ['>', '<', '==']:
-            if op in params:
-                parts = params.split(op, 1)
-                if len(parts) == 2:
-                    variable = parts[0].strip()
-                    try:
-                        value = float(parts[1].strip())
-                    except ValueError:
-                        print(f"[DEBUG] Could not convert condition value to float: {parts[1].strip()}")
-                        return {'type': 'error', 'message': 'Invalid numeric value in condition'}
-                    condition = (op, value)
-                    print(f"[DEBUG] Parsed condition: variable={variable}, op={op}, value={value}")
-                    break
+    #     # Detect condition in params
+    #     for op in ['>', '<', '==']:
+    #         if op in params:
+    #             parts = params.split(op, 1)
+    #             if len(parts) == 2:
+    #                 variable = parts[0].strip()
+    #                 try:
+    #                     value = float(parts[1].strip())
+    #                 except ValueError:
+    #                     print(f"[DEBUG] Could not convert condition value to float: {parts[1].strip()}")
+    #                     return {'type': 'error', 'message': 'Invalid numeric value in condition'}
+    #                 condition = (op, value)
+    #                 print(f"[DEBUG] Parsed condition: variable={variable}, op={op}, value={value}")
+    #                 break
 
-        if condition is None:
-            variable = params.strip()
-            print(f"[DEBUG] No condition found, using variable: {variable}")
+    #     if condition is None:
+    #         variable = params.strip()
+    #         print(f"[DEBUG] No condition found, using variable: {variable}")
 
-        # Resolve data
-        data = None
-        if variable in self.variables:
-            data = self.variables[variable]
-            print(f"[DEBUG] Found variable '{variable}' in self.variables")
-        else:
-            data = self._resolve_data_reference(variable)
-            if data is not None:
-                print(f"[DEBUG] Resolved variable '{variable}' using _resolve_data_reference")
+    #     # Resolve data
+    #     data = None
+    #     if variable in self.variables:
+    #         data = self.variables[variable]
+    #         print(f"[DEBUG] Found variable '{variable}' in self.variables")
+    #     else:
+    #         data = self._resolve_data_reference(variable)
+    #         if data is not None:
+    #             print(f"[DEBUG] Resolved variable '{variable}' using _resolve_data_reference")
 
-        if data is None:
-            print(f"[DEBUG] Failed to resolve data for variable: {variable}")
-            return {'type': 'error', 'message': f'Cannot resolve variable {variable}'}
+    #     if data is None:
+    #         print(f"[DEBUG] Failed to resolve data for variable: {variable}")
+    #         return {'type': 'error', 'message': f'Cannot resolve variable {variable}'}
 
-        if not isinstance(data, (np.ndarray, list)):
-            print(f"[DEBUG] Resolved data is not array-like: type={type(data)}")
-            return {'type': 'error', 'message': f'Variable {variable} is not numeric data'}
+    #     if not isinstance(data, (np.ndarray, list)):
+    #         print(f"[DEBUG] Resolved data is not array-like: type={type(data)}")
+    #         return {'type': 'error', 'message': f'Variable {variable} is not numeric data'}
 
-        data = np.array(data)
-        print(f"[DEBUG] Data sample: {data[:10]} (length: {len(data)})")
+    #     data = np.array(data)
+    #     print(f"[DEBUG] Data sample: {data[:10]} (length: {len(data)})")
 
-        if condition:
-            op, val = condition
-            print(f"[DEBUG] Applying condition: {op} {val}")
-            if op == '>':
-                prob = np.mean(data > val)
-            elif op == '<':
-                prob = np.mean(data < val)
-            elif op == '==':
-                prob = np.mean(data == val)
-            else:
-                print(f"[DEBUG] Unsupported operator: {op}")
-                return {'type': 'error', 'message': f'Unsupported operator {op}'}
+    #     if condition:
+    #         op, val = condition
+    #         print(f"[DEBUG] Applying condition: {op} {val}")
+    #         if op == '>':
+    #             prob = np.mean(data > val)
+    #         elif op == '<':
+    #             prob = np.mean(data < val)
+    #         elif op == '==':
+    #             prob = np.mean(data == val)
+    #         else:
+    #             print(f"[DEBUG] Unsupported operator: {op}")
+    #             return {'type': 'error', 'message': f'Unsupported operator {op}'}
 
-            print(f"[DEBUG] Computed probability: {prob}")
-            return {
-                'type': 'query_result',
-                'query_type': 'probability',
-                'variable': variable,
-                'condition': f"{variable} {op} {val}",
-                'result': float(prob),
-                'visualization': self._generate_probability_visualization(data, variable)
-            }
-        else:
-            print("[DEBUG] No condition specified; returning histogram")
-            return {
-                'type': 'query_result',
-                'query_type': 'distribution',
-                'variable': variable,
-                'visualization': self._generate_histogram(data, variable)
-            }
+    #         print(f"[DEBUG] Computed probability: {prob}")
+    #         return {
+    #             'type': 'query_result',
+    #             'query_type': 'probability',
+    #             'variable': variable,
+    #             'condition': f"{variable} {op} {val}",
+    #             'result': float(prob),
+    #             'visualization': self._generate_probability_visualization(data, variable)
+    #         }
+    #     else:
+    #         print("[DEBUG] No condition specified; returning histogram")
+    #         return {
+    #             'type': 'query_result',
+    #             'query_type': 'distribution',
+    #             'variable': variable,
+    #             'visualization': self._generate_histogram(data, variable)
+    #         }
     # def _execute_probability_query(self, params):
     #     """Execute a probability query P(X > 0)"""
     #     print("\n--- Executing Probability Query ---")
@@ -594,6 +596,314 @@ class PQLExecutor:
     #         import traceback
     #         traceback.print_exc()
     #         return {'type': 'error', 'message': f'Error in probability query: {str(e)}'}
+    def _execute_probability_query(self, params):
+        """Execute a probability query P(X > value) or conditional P(A | B)"""
+        print(f"[DEBUG] Received params: {params}")
+        
+        if not params:
+            return {'type': 'error', 'message': 'Invalid probability query'}
+        
+        if isinstance(params, list):
+            params = params[0]
+        params = params.strip()
+
+        # Check for conditional probability (A | B)
+        if '|' in params:
+            print("[DEBUG] Detected conditional probability")
+            target_expr, cond_expr = map(str.strip, params.split('|', 1))
+        else:
+            target_expr = params
+            cond_expr = None
+
+        def parse_expression(expr):
+            """Parses expressions like 'user.age > 20' into variable, op, value"""
+            for op in ['>=', '<=', '==', '>', '<']:
+                if op in expr:
+                    var, val = map(str.strip, expr.split(op))
+                    try:
+                        val = float(val)
+                    except ValueError:
+                        return None, None, None
+                    return var, op, val
+            return expr.strip(), None, None  # No operator
+
+        def resolve_data(var):
+            """Tries to resolve data either directly or through reference"""
+            if var in self.variables:
+                return self.variables[var]
+            else:
+                return self._resolve_data_reference(var)
+
+        # Parse target expression
+        target_var, target_op, target_val = parse_expression(target_expr)
+        target_data = resolve_data(target_var)
+        if target_data is None:
+            return {'type': 'error', 'message': f"Cannot resolve variable '{target_var}'"}
+
+        target_data = np.array(target_data)
+
+        # If no condition, just return histogram or single prob
+        if not cond_expr:
+            if target_op is None:
+                return {
+                    'type': 'query_result',
+                    'query_type': 'distribution',
+                    'variable': target_var,
+                    'visualization': self._generate_histogram(target_data, target_var)
+                }
+            else:
+                if target_op == '>':
+                    prob = np.mean(target_data > target_val)
+                elif target_op == '<':
+                    prob = np.mean(target_data < target_val)
+                elif target_op == '==':
+                    prob = np.mean(target_data == target_val)
+                elif target_op == '>=':
+                    prob = np.mean(target_data >= target_val)
+                elif target_op == '<=':
+                    prob = np.mean(target_data <= target_val)
+                else:
+                    return {'type': 'error', 'message': f"Unsupported operator {target_op}"}
+
+                return {
+                    'type': 'query_result',
+                    'query_type': 'probability',
+                    'variable': target_expr,
+                    'condition': None,
+                    'result': float(prob),
+                    'visualization': self._generate_probability_visualization(target_data, target_var, target_op, target_val, prob)
+                }
+
+        # Parse condition expression
+        cond_var, cond_op, cond_val = parse_expression(cond_expr)
+        cond_data = resolve_data(cond_var)
+        if cond_data is None:
+            return {'type': 'error', 'message': f"Cannot resolve condition variable '{cond_var}'"}
+
+        cond_data = np.array(cond_data)
+
+        # Mask where condition is True
+        if cond_op == '>':
+            cond_mask = cond_data > cond_val
+        elif cond_op == '<':
+            cond_mask = cond_data < cond_val
+        elif cond_op == '==':
+            cond_mask = cond_data == cond_val
+        elif cond_op == '>=':
+            cond_mask = cond_data >= cond_val
+        elif cond_op == '<=':
+            cond_mask = cond_data <= cond_val
+        else:
+            return {'type': 'error', 'message': f"Unsupported condition operator {cond_op}"}
+
+        if target_op is None:
+            prob = float(np.mean(cond_mask))
+        else:
+            # Apply same mask to target_data
+            if len(target_data) != len(cond_mask):
+                return {'type': 'error', 'message': f"Data length mismatch between '{target_var}' and '{cond_var}'"}
+            filtered_target = target_data[cond_mask]
+            if len(filtered_target) == 0:
+                return {'type': 'error', 'message': 'No data satisfies the condition'}
+            if target_op == '>':
+                prob = np.mean(filtered_target > target_val)
+            elif target_op == '<':
+                prob = np.mean(filtered_target < target_val)
+            elif target_op == '==':
+                prob = np.mean(filtered_target == target_val)
+            elif target_op == '>=':
+                prob = np.mean(filtered_target >= target_val)
+            elif target_op == '<=':
+                prob = np.mean(filtered_target <= target_val)
+            else:
+                return {'type': 'error', 'message': f"Unsupported target operator {target_op}"}
+
+        def is_variable(s):
+            return all(op not in s for op in ['>', '<', '==', '!=', '>=', '<='])
+        
+        return {
+            'type': 'query_result',
+            'query_type': 'probability',
+            'variable': f"{target_expr} | {cond_expr}",
+            'condition': f"{cond_expr}",
+            'result': float(prob),
+            'visualization': self._generate_conditional_probability_visualization(target_data, cond_data, target_var, target_op, target_val, cond_var, cond_op, cond_val, prob)
+        }
+
+    def _generate_conditional_probability_visualization(
+        self,
+        target_data, condition_data,
+        target_variable, target_operator, target_value,
+        condition_variable, condition_operator, condition_value,
+        probability
+    ):
+        """2D scatter visualization showing only 'both' vs 'not both'"""
+        plt.figure(figsize=(8, 6))
+
+        if len(target_data) == 0 or len(condition_data) == 0:
+            plt.text(0.5, 0.5, "No data available", ha='center', va='center')
+            plt.title(f"P({target_variable} {target_operator} {target_value} | "
+                    f"{condition_variable} {condition_operator} {condition_value})")
+        else:
+            def apply_op(data, op, val):
+                return {
+                    '>': data > val,
+                    '>=': data >= val,
+                    '<': data < val,
+                    '<=': data <= val,
+                    '==': data == val,
+                }.get(op, np.full_like(data, False, dtype=bool))
+
+            condition_mask = apply_op(condition_data, condition_operator, condition_value)
+            target_mask = apply_op(target_data, target_operator, target_value)
+            both_mask = condition_mask & target_mask
+
+            # Split data into "both" and "not both"
+            not_both_mask = ~both_mask
+
+            # Plot
+            plt.scatter(condition_data[not_both_mask], target_data[not_both_mask],
+                        color='black', alpha=0.4, label='Not satisfied')
+            plt.scatter(condition_data[both_mask], target_data[both_mask],
+                        color='red', alpha=0.8, label='Satisfy Both')
+
+            plt.xlabel(condition_variable)
+            plt.ylabel(target_variable)
+            plt.title(f"P({target_variable} {target_operator} {target_value} | "
+                    f"{condition_variable} {condition_operator} {condition_value}) = {probability:.4f}")
+            plt.legend()
+            plt.grid(alpha=0.3)
+
+        # Save and encode
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png')
+        plt.close()
+
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+
+        return base64.b64encode(image_png).decode('utf-8')
+
+
+    def _generate_probability_visualization(self, data, variable, operator, target_value, probability):
+        """Generate visualization for a simple probability query like P(variable > target_value)"""
+        plt.figure(figsize=(8, 5))
+        
+        if len(data) == 0:
+            plt.text(0.5, 0.5, "No data available", ha='center', va='center')
+            plt.title(f"Probability of {variable} {operator} {target_value}")
+        else:
+            # Histogram
+            bins = min(30, len(np.unique(data)))
+            counts, bin_edges, _ = plt.hist(data, bins=bins, alpha=0.5, color='skyblue', density=True)
+
+            # Highlight area satisfying the condition
+            condition_mask = None
+            if operator == '>':
+                condition_mask = bin_edges[:-1] > target_value
+            elif operator == '<':
+                condition_mask = bin_edges[1:] < target_value
+            elif operator == '>=':
+                condition_mask = bin_edges[:-1] >= target_value
+            elif operator == '<=':
+                condition_mask = bin_edges[1:] <= target_value
+            elif operator == '==':
+                condition_mask = (bin_edges[:-1] <= target_value) & (bin_edges[1:] >= target_value)
+            else:
+                condition_mask = np.full_like(bin_edges[:-1], False, dtype=bool)
+
+            for i in range(len(condition_mask)):
+                if condition_mask[i]:
+                    plt.fill_between([bin_edges[i], bin_edges[i+1]], 0, counts[i],
+                                    color='orange', alpha=0.6)
+
+            # Draw threshold line
+            plt.axvline(x=target_value, color='r', linestyle='--', 
+                        label=f"{variable} {operator} {target_value}")
+
+            # Label and title
+            plt.title(f"Distribution of {variable} with P({variable} {operator} {target_value}) = {probability:.4f}")
+            plt.xlabel("Value")
+            plt.ylabel("Density")
+            plt.legend()
+        
+        plt.grid(alpha=0.3)
+
+        # Save to bytes buffer
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png')
+        plt.close()
+        
+        # Convert to base64
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+        
+        return base64.b64encode(image_png).decode('utf-8')
+
+    # def _generate_conditional_probability_visualization(
+    #     self,
+    #     target_data, condition_data,
+    #     target_variable, target_operator, target_value,
+    #     condition_variable, condition_operator, condition_value,
+    #     probability
+    # ):
+    #     """Visualize P(target | condition) by showing how both variables overlap"""
+    #     plt.figure(figsize=(8, 5))
+
+    #     if len(target_data) == 0 or len(condition_data) == 0:
+    #         plt.text(0.5, 0.5, "No data available", ha='center', va='center')
+    #         plt.title(f"P({target_variable} {target_operator} {target_value} | "
+    #                 f"{condition_variable} {condition_operator} {condition_value})")
+    #     else:
+    #         # We'll show the distribution of the *condition* variable
+    #         bins = min(30, len(np.unique(condition_data)))
+    #         counts, bin_edges, _ = plt.hist(condition_data, bins=bins, alpha=0.5, color='skyblue', density=True)
+
+    #         # Mark where condition is satisfied
+    #         cond_mask = None
+    #         if condition_operator == '>':
+    #             cond_mask = bin_edges[:-1] > condition_value
+    #         elif condition_operator == '<':
+    #             cond_mask = bin_edges[1:] < condition_value
+    #         elif condition_operator == '>=':
+    #             cond_mask = bin_edges[:-1] >= condition_value
+    #         elif condition_operator == '<=':
+    #             cond_mask = bin_edges[1:] <= condition_value
+    #         elif condition_operator == '==':
+    #             cond_mask = (bin_edges[:-1] <= condition_value) & (bin_edges[1:] >= condition_value)
+    #         else:
+    #             cond_mask = np.full_like(bin_edges[:-1], False, dtype=bool)
+
+    #         for i in range(len(cond_mask)):
+    #             if cond_mask[i]:
+    #                 plt.fill_between([bin_edges[i], bin_edges[i+1]], 0, counts[i],
+    #                                 color='orange', alpha=0.5)
+
+    #         # Now highlight where BOTH condition and target are satisfied
+    #         # This isn't shown directly in histogram — we annotate it as conditional
+    #         plt.axvline(x=condition_value, color='r', linestyle='--',
+    #                     label=f"{condition_variable} {condition_operator} {condition_value}")
+
+    #         # Title and label
+    #         plt.title(f"P({target_variable} {target_operator} {target_value} | "
+    #                 f"{condition_variable} {condition_operator} {condition_value}) = {probability:.4f}")
+    #         plt.xlabel(f"{condition_variable} distribution")
+    #         plt.ylabel("Density")
+    #         plt.legend()
+
+    #     plt.grid(alpha=0.3)
+
+    #     buffer = io.BytesIO()
+    #     plt.savefig(buffer, format='png')
+    #     plt.close()
+        
+    #     buffer.seek(0)
+    #     image_png = buffer.getvalue()
+    #     buffer.close()
+        
+    #     return base64.b64encode(image_png).decode('utf-8')
 
     def _execute_correlation_query(self, params):
         try:
@@ -630,43 +940,44 @@ class PQLExecutor:
             }
         except Exception as e:
             return {'type': 'error', 'message': f'Error in correlation query: {str(e)}'}
-    
-    def _generate_probability_visualization(self, data, variable):
-        """Generate visualization for probability query"""
-        plt.figure(figsize=(8, 5))
+
+
+    # def _generate_probability_visualization(self, data, variable):
+    #     """Generate visualization for probability query"""
+    #     plt.figure(figsize=(8, 5))
         
-        # For binary data
-        if set(np.unique(data)) <= {0, 1}:
-            counts = np.bincount(data.astype(int))
-            plt.bar(['0', '1'], counts/len(data), color=['lightcoral', 'lightblue'])
-            plt.title(f"Probability Distribution of {variable}")
-            plt.ylabel("Probability")
+    #     # For binary data
+    #     if set(np.unique(data)) <= {0, 1}:
+    #         counts = np.bincount(data.astype(int))
+    #         plt.bar(['0', '1'], counts/len(data), color=['lightcoral', 'lightblue'])
+    #         plt.title(f"Probability Distribution of {variable}")
+    #         plt.ylabel("Probability")
             
-        # For continuous data
-        else:
-            kde = stats.gaussian_kde(data)
-            x = np.linspace(min(data), max(data), 1000)
-            plt.plot(x, kde(x), 'b-')
-            plt.fill_between(x, kde(x), alpha=0.3)
-            plt.axvline(x=0, color='r', linestyle='--')
-            pos_prob = np.mean(data > 0)
-            plt.title(f"Density of {variable}, P({variable} > 0) = {pos_prob:.4f}")
-            plt.xlabel("Value")
-            plt.ylabel("Density")
+    #     # For continuous data
+    #     else:
+    #         kde = stats.gaussian_kde(data)
+    #         x = np.linspace(min(data), max(data), 1000)
+    #         plt.plot(x, kde(x), 'b-')
+    #         plt.fill_between(x, kde(x), alpha=0.3)
+    #         plt.axvline(x=0, color='r', linestyle='--')
+    #         pos_prob = np.mean(data > 0)
+    #         plt.title(f"Density of {variable}, P({variable} > 0) = {pos_prob:.4f}")
+    #         plt.xlabel("Value")
+    #         plt.ylabel("Density")
             
-        plt.grid(alpha=0.3)
+    #     plt.grid(alpha=0.3)
         
-        # Save to bytes buffer
-        buffer = io.BytesIO()
-        plt.savefig(buffer, format='png')
-        plt.close()
+    #     # Save to bytes buffer
+    #     buffer = io.BytesIO()
+    #     plt.savefig(buffer, format='png')
+    #     plt.close()
         
-        # Convert to base64
-        buffer.seek(0)
-        image_png = buffer.getvalue()
-        buffer.close()
+    #     # Convert to base64
+    #     buffer.seek(0)
+    #     image_png = buffer.getvalue()
+    #     buffer.close()
         
-        return base64.b64encode(image_png).decode('utf-8')
+    #     return base64.b64encode(image_png).decode('utf-8')
     
     def _execute_expectation_query(self, params):
         """Execute an expectation query E(X)"""
