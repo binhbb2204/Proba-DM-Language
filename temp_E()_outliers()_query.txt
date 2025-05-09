@@ -21,3 +21,15 @@ load_data("sample.csv", name: customer_data);
 query E(customer_data.income | customer_data.age > 40);
 query outliers(customer_data.age);
 query outliers(customer_data.income); 
+
+
+// Define probabilistic variables
+var income follows Normal(50000, 15000);
+var age follows Normal(35, 10);
+var is_customer follows Bernoulli(0.7);
+
+// Query probabilities
+query E(income);
+query E(income | age > 40);
+query outliers(income);
+query outliers(age);
