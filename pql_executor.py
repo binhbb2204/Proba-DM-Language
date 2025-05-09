@@ -941,6 +941,35 @@ class PQLExecutor:
         except Exception as e:
             return {'type': 'error', 'message': f'Error in correlation query: {str(e)}'}
 
+    def _generate_correlation_visualization(self, data1, data2, var1, var2, corr):
+        """Generate a scatter plot for correlation visualization."""
+        plt.figure(figsize=(8, 5))
+        
+        # Plot scatter
+        plt.scatter(data1, data2, alpha=0.6, edgecolor='k', color='skyblue')
+        plt.title(f"Correlation between {var1} and {var2}")
+        plt.xlabel(var1)
+        plt.ylabel(var2)
+
+        # Fit and plot regression line (optional but nice)
+        if len(data1) > 1:
+            m, b = np.polyfit(data1, data2, 1)
+            plt.plot(data1, m * np.array(data1) + b, color='red', linestyle='--', label=f'Corr = {corr:.4f}')
+            plt.legend()
+
+        plt.grid(alpha=0.3)
+
+        # Save to buffer
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png')
+        plt.close()
+
+        # Convert to base64
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+
+        return base64.b64encode(image_png).decode('utf-8')
 
     # def _generate_probability_visualization(self, data, variable):
     #     """Generate visualization for probability query"""
