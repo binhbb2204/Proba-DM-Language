@@ -12,3 +12,7 @@ Data reference (without passed column)
 load_data("customer_database.csv", name: dataset_name);
 query E(dataset_name);
 query outliers(dataset_name);
+
+load_data("sample.csv", name: customer_data);
+query E(customer_data);
+query outliers(customer_data);
