@@ -16,3 +16,8 @@ query outliers(dataset_name);
 load_data("sample.csv", name: customer_data);
 query E(customer_data);
 query outliers(customer_data);
+
+load_data("sample.csv", name: customer_data);
+query E(customer_data.income | customer_data.age > 40);
+query outliers(customer_data.age);
+query outliers(customer_data.income); 
