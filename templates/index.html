@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
 </head>
 <body>
@@ -196,7 +198,7 @@ query correlation(customer_data.age, customer_data.income);</textarea>
                     <h5>Basic Syntax</h5>
                     <div class="mb-3">
                         <h6>Data Loading:</h6>
-                        <pre><code>load_data("filename.csv", name: "dataset_name");</code></pre>
+                        <pre><code>load_data("filename.csv", name: dataset_name);</code></pre>
                         
                         <h6>Variable Declaration:</h6>
                         <pre><code>var x follows Normal(0, 1);</code></pre>

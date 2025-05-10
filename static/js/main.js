@@ -4,7 +4,13 @@ document.addEventListener('DOMContentLoaded', function() {
         mode: 'javascript',  // Using JavaScript mode for now (we'd create a custom PQL mode in a full implementation)
         theme: 'dracula',
         lineNumbers: true,
-        autoCloseBrackets: true,
+        // autoCloseBrackets: true,
+        autoCloseBrackets: {
+            pairs: '()[]{}""\'\'``',
+            closeBefore: ')]}\'"`,;:>',
+            triples: '',
+            explode: '[]{}',
+        },
         matchBrackets: true,
         indentUnit: 4,
         tabSize: 4,
