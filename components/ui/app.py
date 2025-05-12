@@ -1,6 +1,7 @@
 import os
 import sys
 import tkinter as tk
+import tkinter.ttk as ttk
 import traceback
 from tkinter import ttk, scrolledtext, filedialog, messagebox
 from antlr4 import *
@@ -16,6 +17,7 @@ from components.error_handling import PQLSyntaxErrorListener
 from components.interpreter import PQLInterpreterVisitor
 from components.ui.output import RedirectOutput
 from components.ui.visualization import Visualizer
+from components.ui.autocomplete import Autocomplete
 
 class ProbabilisticQueryLanguageApp:
     """Main application class for PQL IDE"""
@@ -23,6 +25,9 @@ class ProbabilisticQueryLanguageApp:
         self.root = root
         self.root.title("Probabilistic Query Language for Data Mining")
         self.root.geometry("1200x800")
+
+        style = ttk.Style()
+        style.theme_use('clam')
         
         self.create_menu()
         self.create_ui()
@@ -74,6 +79,8 @@ class ProbabilisticQueryLanguageApp:
                                                    font=("Consolas", 11))
         self.code_editor.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
+        self.autocomplete = Autocomplete(self.code_editor)
+
         button_frame = ttk.Frame(self.editor_frame)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
         

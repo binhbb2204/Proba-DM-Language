@@ -18,7 +18,36 @@ document.addEventListener('DOMContentLoaded', function() {
         extraKeys: {
             "Tab": function(cm) {
                 cm.replaceSelection("    ", "end");
-            }
+            },
+            "Ctrl-Space": "autocomplete"
+        },
+        hintOptions: {
+            hint: pqlHint,
+            completeSingle: false,
+            alignWithWord: true
+        }
+    });
+
+    // Setup autocompletion events
+    codeEditor.on("keyup", function(cm, event) {
+        // Don't activate for backspace, enter, etc.
+        const ignoreKeys = [8, 9, 13, 27, 37, 38, 39, 40];
+        
+        if (!cm.state.completionActive && 
+            !ignoreKeys.includes(event.keyCode) && 
+            event.key.length === 1) {
+            CodeMirror.commands.autocomplete(cm, null, {completeSingle: false});
+        }
+    });
+
+    // Handle custom snippet insertion
+    codeEditor.on("hint", function(cm, data) {
+        // When a completion is selected
+        if (data && data.snippet) {
+            // Cancel default insertion
+            data.cancel();
+            // Insert our custom snippet
+            insertSnippet(cm, data.snippet.text);
         }
     });
 
@@ -42,6 +71,160 @@ document.addEventListener('DOMContentLoaded', function() {
     parseButton.addEventListener('click', () => parseCode());
     clearButton.addEventListener('click', () => clearEditor());
     clearConsoleButton.addEventListener('click', () => clearConsole());
+
+    // Define PQL autocomplete data
+    const pqlKeywords = [
+        'var', 'follows', 'query', 'load_data', 'cluster', 'find_associations', 
+        'classify', 'data', 'fitted_to', 'P', 'E', 'correlation', 'outliers'
+    ];
+
+    const pqlDistributions = [
+        'Normal', 'LogNormal', 'Poisson', 'Bernoulli', 'EmpiricalDistribution', 
+        'Gamma', 'Beta', 'Multinomial'
+    ];
+
+    const pqlOperators = [
+        'and', 'or', 'not'
+    ];
+
+    // Define snippets with placeholders
+    const pqlSnippets = {
+        'load_data': {
+            text: 'load_data(/* "filename.csv" */, name: /* dataset_name */);',
+            displayText: 'load_data("filename.csv", name: dataset_name)'
+        },
+        'var': {
+            text: 'var /* variable_name */ follows /* distribution */;',
+            displayText: 'var variable_name follows distribution'
+        },
+        'query P': {
+            text: 'query P(/* condition */);',
+            displayText: 'query P(condition)'
+        },
+        'query E': {
+            text: 'query E(/* variable */);',
+            displayText: 'query E(variable)'
+        },
+        'cluster': {
+            text: 'cluster(/* dataset */, dimensions: [/* dim1 */, /* dim2 */], k: /* number */);',
+            displayText: 'cluster(dataset, dimensions: [...], k: n)'
+        },
+        'find_associations': {
+            text: 'find_associations(/* dataset */, min_support: /* 0.3 */, min_confidence: /* 0.8 */);',
+            displayText: 'find_associations(dataset, min_support: 0.3, min_confidence: 0.8)'
+        },
+        'classify': {
+            text: 'classify(/* dataset */, target: /* column_name */, features: [/* feature1 */, /* feature2 */]);',
+            displayText: 'classify(dataset, target: column, features: [...])'
+        }
+    };
+
+    // Custom PQL hint function
+    function pqlHint(editor) {
+        const cursor = editor.getCursor();
+        const line = editor.getLine(cursor.line);
+        const token = editor.getTokenAt(cursor);
+        const startPos = token.type !== null && !/\s/.test(token.string) ? token : { start: cursor.ch, string: '', end: cursor.ch };
+        const currentWord = startPos.string;
+        
+        // Get context before cursor for better suggestions
+        const contextBefore = line.slice(0, cursor.ch);
+        
+        // Prepare list of suggestions
+        let list = [];
+        
+        // Add different types of suggestions based on context
+        if (contextBefore.match(/var\s+\w+\s+follows\s+$/)) {
+            // After "follows", suggest distributions
+            list = pqlDistributions.map(item => ({ text: item, displayText: item }));
+        } else if (contextBefore.match(/query\s+$/)) {
+            // After "query", suggest query types
+            list = [
+                { text: 'P(', displayText: 'P()' },
+                { text: 'E(', displayText: 'E()' },
+                { text: 'correlation(', displayText: 'correlation()' },
+                { text: 'outliers(', displayText: 'outliers()' }
+            ];
+        } else {
+            // Default suggestions
+            // Add keywords
+            pqlKeywords.forEach(keyword => {
+                if (keyword.startsWith(currentWord)) {
+                    // Check if it's a snippet
+                    if (pqlSnippets[keyword]) {
+                        list.push(pqlSnippets[keyword]);
+                    } else {
+                        list.push({ text: keyword, displayText: keyword });
+                    }
+                }
+            });
+            
+            // Add distributions
+            pqlDistributions.forEach(dist => {
+                if (dist.startsWith(currentWord)) {
+                    list.push({ text: dist, displayText: dist });
+                }
+            });
+            
+            // Add operators
+            pqlOperators.forEach(op => {
+                if (op.startsWith(currentWord)) {
+                    list.push({ text: op, displayText: op });
+                }
+            });
+            
+            // Add special snippets based on current word
+            if ('query'.startsWith(currentWord)) {
+                list.push(pqlSnippets['query P']);
+                list.push(pqlSnippets['query E']);
+            }
+        }
+        
+        return {
+            list: list,
+            from: CodeMirror.Pos(cursor.line, startPos.start),
+            to: CodeMirror.Pos(cursor.line, startPos.end)
+        };
+    }
+
+    // Function to handle snippet placeholders
+    function insertSnippet(editor, text) {
+        const placeholderRegex = /\${(\d+):([^}]*)}/g;
+        let match;
+        let result = text;
+        let cursorPos = null;
+        let placeholders = [];
+        
+        // Replace placeholders with their default values and collect positions
+        while ((match = placeholderRegex.exec(text)) !== null) {
+            const id = parseInt(match[1]);
+            const defaultValue = match[2];
+            const placeholder = { id, text: defaultValue };
+            const startPos = match.index - (text.length - result.length);
+            const endPos = startPos + match[0].length;
+            
+            // Store position information
+            placeholder.from = startPos;
+            placeholder.to = endPos;
+            placeholders.push(placeholder);
+            
+            // Replace in the result string
+            result = result.replace(match[0], defaultValue);
+        }
+        
+        // Insert the text
+        const cursor = editor.getCursor();
+        editor.replaceRange(result, cursor, cursor);
+        
+        // If there are placeholders, select the first one
+        if (placeholders.length > 0) {
+            placeholders.sort((a, b) => a.id - b.id);
+            const first = placeholders[0];
+            const from = editor.posFromIndex(cursor.ch + first.from);
+            const to = editor.posFromIndex(cursor.ch + first.from + first.text.length);
+            editor.setSelection(from, to);
+        }
+    }
 
     // CSV Upload functionality
     const uploadForm = document.getElementById('upload-form');
