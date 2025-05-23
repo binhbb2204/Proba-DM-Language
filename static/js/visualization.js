@@ -260,4 +260,93 @@ function renderASTTree(treeData, containerId = "ast-diagram", viewMode = "fit") 
     }
 }
 
+// Enhanced AST tree visualization with the same view modes
+// function renderASTTree(treeData, containerId = "ast-diagram", viewMode = "fit") {
+//     if (!treeData) return;
+    
+//     // Transform parse tree into AST structure
+//     const astData = JSON.parse(JSON.stringify(treeData));
+//     const abstractTree = transformToAST(astData);
+    
+//     // Render using the enhanced tree function with AST-specific styling
+//     renderParseTree(abstractTree, containerId, viewMode);
+    
+//     // Override styles for AST visualization
+//     const astContainer = d3.select(`#${containerId}`);
+//     astContainer.selectAll(".parse-tree-node circle")
+//         .attr("fill", d => {
+//             if (d.data.type === 'operator') return "#ff6b6b";
+//             if (d.data.type === 'identifier') return "#4dabf7";
+//             if (d.data.type === 'literal') return "#ffd43b";
+//             return "#20c997";
+//         })
+//         .attr("r", d => d.data.type === 'operator' ? 7 : 5);
+
+//     function transformToAST(node) {
+//         if (!node) return null;
+        
+//         // Skip unnecessary syntax nodes
+//         if (node.name.match(/[;,(){}[\]]/) || node.name === 'EOF') {
+//             return null;
+//         }
+        
+//         // Transform node based on type
+//         const newNode = {
+//             name: node.name,
+//             type: getNodeType(node),
+//             children: []
+//         };
+        
+//         // Only include meaningful children
+//         if (node.children) {
+//             newNode.children = node.children
+//                 .map(transformToAST)
+//                 .filter(child => child !== null);
+//         }
+        
+//         // Collapse single-child nodes
+//         if (newNode.children.length === 1 && !isOperator(newNode)) {
+//             return newNode.children[0];
+//         }
+        
+//         return newNode;
+//     }
+    
+//     function getNodeType(node) {
+//         if (node.type === 'terminal') {
+//             if (node.name.match(/^[+\-*/=<>!&|%]+$/)) return 'operator';
+//             if (node.name.match(/^[0-9]+(\.[0-9]+)?$/)) return 'literal';
+//             if (node.name.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) return 'identifier';
+//             return 'terminal';
+//         }
+//         return 'non-terminal';
+//     }
+    
+//     function isOperator(node) {
+//         return node.type === 'operator' || 
+//                ['Expression', 'BinaryExpression', 'UnaryExpression'].includes(node.name);
+//     }
+    
+//     // Function to simplify the tree to represent an AST better
+//     function simplifyForAST(node) {
+//         if (!node) return null;
+        
+//         if (node.type === 'terminal' && node.name.match(/^[,;()[\]{}]$/)) {
+//             return null;  // Skip pure punctuation nodes
+//         }
+        
+//         if (node.children) {
+//             const newChildren = [];
+//             for (const child of node.children) {
+//                 const simplified = simplifyForAST(child);
+//                 if (simplified) {
+//                     newChildren.push(simplified);
+//                 }
+//             }
+//             node.children = newChildren.length > 0 ? newChildren : null;
+//         }
+        
+//         return node;
+//     }
+// }
 
