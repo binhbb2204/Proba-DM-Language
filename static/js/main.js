@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const outputContent = document.getElementById('output-content');
     const parseTreeContent = document.getElementById('parse-tree-content');
     const visualizationContent = document.getElementById('visualization-content');
-    const astContent = document.getElementById('ast-content');
     const samplesMenu = document.getElementById('samples-menu');
 
     // Load sample code snippets
@@ -542,11 +541,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 treeString.style.overflowX = 'auto';
                 treeString.textContent = data.parse_tree;
                 parseTreeContent.appendChild(treeString);
-                
-                // Also update AST view (simplified for now)
-                astContent.innerHTML = '<div id="ast-diagram" class="tree-container"></div>';
-                // In a real implementation, we'd generate a proper AST, but for now we'll reuse the parse tree
-                renderASTTree(data.tree_json);
             } else {
                 parseTreeContent.innerHTML = `
                     <div class="alert alert-danger">
