@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import io
 import base64
 import json
+import re
 from scipy import stats
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -78,6 +79,10 @@ class PQLExecutor:
                     
                 elif line.startswith('query'):
                     result = self._execute_query(line)
+                    results.append(result)
+                    
+                elif line.startswith('cluster'):
+                    result = self._execute_clustering(line)
                     results.append(result)
                 
                 # print("[STATE AFTER] data:", self.data)
@@ -890,96 +895,125 @@ class PQLExecutor:
     
     def _execute_clustering(self, statement):
         """Execute a clustering statement"""
-        params = self._extract_params(statement)
-        if len(params) < 2:
-            return {'type': 'error', 'message': 'Invalid clustering statement'}
-            
-        dataset_name = params[0].strip()
-        
-        # Parse clustering options
-        options = {}
-        for param in params[1:]:
-            if ':' in param:
-                key, value = param.split(':', 1)
-                options[key.strip()] = value.strip()
-                
-        # Extract dimensions and k
-        dimensions = []
-        if 'dimensions' in options:
-            dim_str = options['dimensions']
-            dim_str = dim_str.strip('[]')
-            dimensions = [d.strip() for d in dim_str.split(',')]
-            
-        k = 3  # Default
-        if 'k' in options:
-            k = int(options['k'])
-            
-        # Perform clustering
         try:
-            if dataset_name in self.data:
-                data = self.data[dataset_name]
+            # Remove 'cluster' and get parameters string
+            params_str = statement[statement.find('(')+1:statement.rfind(')')].strip()
+            params = [p.strip() for p in params_str.split(',')]
+            
+            if len(params) < 2:
+                return {'type': 'error', 'message': 'Invalid clustering statement - requires dataset and options'}
                 
-                if dimensions and all(dim in data.columns for dim in dimensions):
-                    X = data[dimensions].values
-                    
-                    # Apply KMeans
-                    kmeans = KMeans(n_clusters=k, random_state=42)
-                    clusters = kmeans.fit_predict(X)
-                    
-                    # Add cluster column to dataset
-                    data['cluster'] = clusters
-                    
-                    # Evaluate clustering
-                    silhouette = silhouette_score(X, clusters) if len(np.unique(clusters)) > 1 else 0
-                    
-                    return {
-                        'type': 'clustering_result',
-                        'dataset': dataset_name,
-                        'dimensions': dimensions,
-                        'k': k,
-                        'silhouette_score': float(silhouette),
-                        'cluster_sizes': [int(np.sum(clusters == i)) for i in range(k)],
-                        'visualization': self._generate_clustering_visualization(X, clusters, dimensions)
-                    }
+            # First parameter is dataset name
+            dataset_name = params[0].strip().strip('"')
+            dimensions = []
+            k = 3  # Default k value
             
-            return {'type': 'error', 'message': f'Cannot perform clustering on {dataset_name}'}
+            # Join remaining params back together to handle array syntax
+            options_str = ','.join(params[1:])
             
+            # Extract dimensions array
+            dim_match = re.search(r'dimensions\s*:\s*\[(.*?)\]', options_str)
+            if dim_match:
+                dimensions = [d.strip() for d in dim_match.group(1).split(',')]
+            
+            # Extract k value
+            k_match = re.search(r'k\s*:\s*(\d+)', options_str)
+            if k_match:
+                k = int(k_match.group(1))
+                
+            # Validate dataset exists
+            if dataset_name not in self.data:
+                return {'type': 'error', 'message': f'Dataset {dataset_name} not found'}
+                
+            data = self.data[dataset_name]
+            
+            # Validate dimensions exist in dataset
+            if not all(dim in data.columns for dim in dimensions):
+                return {'type': 'error', 'message': f'One or more dimensions not found in dataset: {dimensions}'}
+                
+            # Extract features for clustering
+            X = data[dimensions].values
+            
+            # Perform k-means clustering
+            kmeans = KMeans(n_clusters=k, random_state=42)
+            clusters = kmeans.fit_predict(X)
+            
+            # Calculate silhouette score
+            silhouette = silhouette_score(X, clusters) if len(np.unique(clusters)) > 1 and len(X) > k else 0
+            self.data[dataset_name]['cluster'] = clusters
+            
+            # Prepare cluster statistics
+            cluster_sizes = [int(np.sum(clusters == i)) for i in range(k)]
+            cluster_means = [data[dimensions][clusters == i].mean().to_dict() for i in range(k)]
+            
+            return {
+                'type': 'clustering_result',
+                'dataset': dataset_name,
+                'dimensions': dimensions,
+                'k': k,
+                'silhouette_score': float(silhouette),
+                'cluster_sizes': cluster_sizes,
+                'cluster_means': cluster_means,
+                'visualization': self._generate_clustering_visualization(X, clusters, dimensions)
+            }
+                
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return {'type': 'error', 'message': f'Error in clustering: {str(e)}'}
+                
     
     def _generate_clustering_visualization(self, X, clusters, dimensions):
-        """Generate visualization for clustering results"""
-        plt.figure(figsize=(8, 5))
+        """Generate visualization for clustering results with one plot per row"""
+        n_dims = len(dimensions)
+        n_plots = (n_dims * (n_dims - 1)) // 2
         
-        # If 2D data, plot scatter
-        if X.shape[1] >= 2:
-            plt.scatter(X[:, 0], X[:, 1], c=clusters, cmap='viridis', alpha=0.6)
-            if len(dimensions) >= 2:
-                plt.xlabel(dimensions[0])
-                plt.ylabel(dimensions[1])
-            plt.title(f"K-Means Clustering Result (k={len(np.unique(clusters))})")
-            plt.colorbar(label='Cluster')
-        else:
-            # For 1D data
-            for i in np.unique(clusters):
-                plt.hist(X[clusters == i, 0], alpha=0.5, label=f'Cluster {i}')
-            plt.xlabel(dimensions[0] if dimensions else 'Feature')
-            plt.title("1D Clustering")
-            plt.legend()
+        total_plots = n_plots
+        if n_dims >= 3:
+            total_plots += 1
+        
+        fig = plt.figure(figsize=(10, 5 * total_plots))
+        
+        
+        plot_idx = 1
+        
+        if n_dims >= 3:
+            ax = fig.add_subplot(total_plots, 1, plot_idx, projection='3d')
+            scatter = ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=clusters, cmap='viridis', alpha=0.6)
             
-        plt.grid(alpha=0.3)
+            ax.set_xlabel(dimensions[0])
+            ax.set_ylabel(dimensions[1])
+            ax.set_zlabel(dimensions[2])
+            ax.set_title(f"3D Clustering Visualization ({dimensions[0]}, {dimensions[1]}, {dimensions[2]})")
+            plt.colorbar(scatter, ax=ax, label='Cluster')
+            plot_idx += 1
+            
+        for i in range(n_dims):
+            for j in range(i + 1, n_dims):
+                ax = fig.add_subplot(total_plots, 1, plot_idx)
+                
+                scatter = ax.scatter(X[:, i], X[:, j], c=clusters, cmap='viridis', alpha=0.6)
+                
+                ax.set_xlabel(dimensions[i])
+                ax.set_ylabel(dimensions[j])
+                ax.set_title(f"{dimensions[i]} vs {dimensions[j]}")
+                
+                plt.colorbar(scatter, ax=ax, label='Cluster')
+                ax.grid(alpha = 0.3)
+                plot_idx += 1
         
-        # Save to bytes buffer
+        plt.tight_layout(pad=3.0) #Padding increment
+        
         buffer = io.BytesIO()
-        plt.savefig(buffer, format='png')
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
         plt.close()
         
-        # Convert to base64
+        #This one is to convert to base64
         buffer.seek(0)
-        image_png = buffer.getvalue()
+        img_png = buffer.getvalue()
         buffer.close()
         
-        return base64.b64encode(image_png).decode('utf-8')
+        return base64.b64encode(img_png).decode('utf-8')
     
     def _execute_association(self, statement):
         """Execute an association rule mining statement"""
