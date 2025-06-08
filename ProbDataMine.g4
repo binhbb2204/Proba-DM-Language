@@ -1,7 +1,6 @@
 grammar ProbDataMine;
 
-// Parser Rules
-program : statement+ EOF ;
+program: statement+ EOF ;
 
 statement 
     : dataLoadStmt 
@@ -19,9 +18,11 @@ LOAD_DATA : 'load_data' ;
 loadOption : IDENTIFIER COLON expr ;
 
 variableDeclaration : VAR IDENTIFIER FOLLOWS distributionExpr SEMICOLON ;
-FOLLOWS : 'follows' ;
-variableAssignment : VAR IDENTIFIER '=' expr SEMICOLON ;
-VAR : 'var' ;
+FOLLOWS: 'follows' ;
+variableAssignment : VAR IDENTIFIER '=' expr SEMICOLON 
+                | VAR IDENTIFIER '=' IDENTIFIER '[' filterExpr ']' SEMICOLON;
+VAR: 'var' ;
+filterExpr: expr;
 distributionExpr 
     : NORMAL LPAREN expr COMMA expr RPAREN
     | LOGNORMAL LPAREN expr COMMA expr RPAREN
@@ -33,20 +34,20 @@ distributionExpr
     | MULTINOMIAL LPAREN expr (COMMA expr)* RPAREN
     | FITTED_TO COLON dataRef
     ;
-NORMAL : 'Normal' ;
-LOGNORMAL : 'LogNormal' ;
-POISSON : 'Poisson' ;
-BERNOULLI : 'Bernoulli' ;
-EMPIRICAL_DISTRIBUTION : 'EmpiricalDistribution' ;
-GAMMA : 'Gamma' ;
-BETA : 'Beta' ;
-MULTINOMIAL : 'Multinomial' ;
-FITTED_TO : 'fitted_to' ;
-dataRef : DATA '.' IDENTIFIER ;
-DATA : 'data' ;
+NORMAL: 'Normal' ;
+LOGNORMAL: 'LogNormal' ;
+POISSON: 'Poisson' ;
+BERNOULLI: 'Bernoulli' ;
+EMPIRICAL_DISTRIBUTION: 'EmpiricalDistribution' ;
+GAMMA: 'Gamma' ;
+BETA: 'Beta' ;
+MULTINOMIAL: 'Multinomial' ;
+FITTED_TO: 'fitted_to' ;
+dataRef: DATA '.' IDENTIFIER ;
+DATA: 'data' ;
 
-queryStmt : QUERY queryExpr SEMICOLON ;
-QUERY : 'query' ;
+queryStmt: QUERY queryExpr SEMICOLON ;
+QUERY: 'query' ;
 queryExpr 
     : P LPAREN expr (OR_OP expr)? RPAREN            // Allow conditional P(A | B)
     | E LPAREN expr (OR_OP expr)? RPAREN            // Allow conditional E(X | Y)
@@ -57,7 +58,7 @@ P: 'P';
 E: 'E';
 CORRELATION: 'correlation';
 OUTLIERS: 'outliers';
-OR_OP : '|' ;
+OR_OP: '|';
 
 clusteringStmt : CLUSTER LPAREN IDENTIFIER COMMA clusteringOptions RPAREN SEMICOLON ;
 CLUSTER : 'cluster' ;
@@ -86,21 +87,21 @@ powExpr : unaryExpr ('^' unaryExpr)* ;
 unaryExpr : '-' unaryExpr | primary ;
 primary : INTEGER | FLOAT | IDENTIFIER ('.' IDENTIFIER)* | LPAREN expr RPAREN ;
 
-commentStmt : COMMENT ;
+commentStmt: COMMENT;
 
 // Lexer Rules
-COMMENT : '//' ~[\n]* '\n'? -> skip ;
-STRING : '"' (~["\r\n])* '"' ;
-IDENTIFIER : [a-zA-Z][a-zA-Z0-9_]* ;
-INTEGER : [0-9]+ ;
-FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+ ;
+COMMENT: '//' ~[\n]* '\n'? -> skip;
+STRING: '"' (~["\r\n])* '"' ;
+IDENTIFIER: [a-zA-Z][a-zA-Z0-9_]*;
+INTEGER: [0-9]+ ;
+FLOAT: [0-9]+ '.' [0-9]* | '.' [0-9]+;
 
-SEMICOLON : ';' ;
-LPAREN : '(' ;
-RPAREN : ')' ;
-COMMA : ',' ;
-COLON : ':' ;
-LBRACK : '[' ;
-RBRACK : ']' ;
+SEMICOLON: ';';
+LPAREN: '(';
+RPAREN: ')';
+COMMA: ',';
+COLON: ':';
+LBRACK: '[';
+RBRACK: ']';
 
-WS : [ \t\r\n]+ -> skip ;
+WS: [ \t\r\n]+ -> skip;
