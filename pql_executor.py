@@ -1103,56 +1103,6 @@ class PQLExecutor:
         except Exception as e:
             return {'type': 'error', 'message': f'Error in association rules: {str(e)}'}
     
-    # def _execute_classification(self, statement):
-    #     """Execute a classification statement"""
-    #     params = self._extract_params(statement)
-    #     if len(params) < 2:
-    #         return {'type': 'error', 'message': 'Invalid classification statement'}
-            
-    #     dataset_name = params[0].strip()
-        
-    #     # Parse options
-    #     options = {}
-    #     target = None
-    #     for param in params[1:]:
-    #         if ':' in param:
-    #             key, value = param.split(':', 1)
-    #             if key.strip() == 'target':
-    #                 target = value.strip()
-    #             else:
-    #                 options[key.strip()] = value.strip()
-        
-    #     if not target:
-    #         return {'type': 'error', 'message': 'Classification requires a target variable'}
-            
-    #     # Get classifier type
-    #     classifier_type = options.get('classifier', 'decision_tree')
-        
-    #     try:
-    #         if dataset_name in self.data:
-    #             data = self.data[dataset_name]
-                
-    #             if target in data.columns:
-    #                 # Mock classification results for demonstration
-    #                 return {
-    #                     'type': 'classification_result',
-    #                     'dataset': dataset_name,
-    #                     'target': target,
-    #                     'classifier': classifier_type,
-    #                     'accuracy': 0.85,
-    #                     'feature_importance': [
-    #                         {"feature": "feature1", "importance": 0.4},
-    #                         {"feature": "feature2", "importance": 0.3},
-    #                         {"feature": "feature3", "importance": 0.2}
-    #                     ],
-    #                     'confusion_matrix': [[45, 5], [10, 40]]
-    #                 }
-            
-    #         return {'type': 'error', 'message': f'Cannot perform classification on {dataset_name}'}
-            
-    #     except Exception as e:
-    #         return {'type': 'error', 'message': f'Error in classification: {str(e)}'}
-
     def _execute_classification(self, statement):
         """Execute a classification statement using real classification models"""
         from sklearn.model_selection import train_test_split
