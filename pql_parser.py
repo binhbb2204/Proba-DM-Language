@@ -36,34 +36,27 @@ class PQLParser:
     
     def initialize(self):
         """Initialize the parser (called once, can be called again to reload)"""
-        # This is now handled by grammar_compiler.py before the app starts
         self.initialized = True
         return True
     
     def parse(self, code):
         """Parse PQL code and return results"""
         try:
-            # Create an input stream from the code
             input_stream = InputStream(code)
             
-            # Create lexer
             lexer = ProbDataMineLexer(input_stream)
             lexer.removeErrorListeners()
             error_listener = PQLSyntaxErrorListener()
             lexer.addErrorListener(error_listener)
             
-            # Create token stream
             token_stream = CommonTokenStream(lexer)
             
-            # Create parser
             parser = ProbDataMineParser(token_stream)
             parser.removeErrorListeners()
             parser.addErrorListener(error_listener)
             
-            # Parse the program - no need to call getText() directly
             tree = parser.program()
             
-            # Check if there were any syntax errors
             if error_listener.errors:
                 return {
                     'success': False,
@@ -76,7 +69,6 @@ class PQLParser:
                     'parser': parser
                 }
         except Exception as e:
-            # If any exception occurs, return it as an error
             import traceback
             traceback.print_exc()
             return {
@@ -95,11 +87,9 @@ class PQLParser:
         if not result['success']:
             return result
         
-        # Convert tree to JSON format for visualization
         tree = result['tree']
         parser = result['parser']
         
-        # Convert parse tree to JSON structure for visualization
         return {
             'success': True,
             'tree_json': self._convert_tree_to_json(tree, parser),
@@ -111,16 +101,13 @@ class PQLParser:
         if node is None:
             return None
             
-        # Handle terminal nodes (tokens) differently from non-terminals
         if node.getChildCount() == 0:
-            # For terminal nodes, use their text directly
             return {
-                'name': node.getText(),  # Terminal nodes have getText() method that doesn't need parameters
+                'name': node.getText(),  
                 'type': 'terminal',
                 'children': []
             }
         else:
-            # Get rule name for non-terminal nodes
             rule_name = ''
             if hasattr(parser, 'ruleNames') and hasattr(node, 'getRuleIndex'):
                 rule_index = node.getRuleIndex()
@@ -129,14 +116,12 @@ class PQLParser:
                 else:
                     rule_name = str(type(node).__name__)
             
-            # Create node object with children
             result = {
                 'name': rule_name,
                 'type': 'non-terminal',
                 'children': []
             }
             
-            # Add all children recursively
             for i in range(node.getChildCount()):
                 child = node.getChild(i)
                 child_json = self._convert_tree_to_json(child, parser)
