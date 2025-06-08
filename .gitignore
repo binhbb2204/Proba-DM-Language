@@ -35,3 +35,5 @@ var/
 Thumbs.db
 
 constants.py
+out/workflow/diagram/WorkflowDiagram.png
+workflow/diagram.plantuml
