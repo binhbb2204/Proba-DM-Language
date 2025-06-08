@@ -188,6 +188,10 @@ class PQLExecutor:
 
     def _resolve_data_reference(self, data_ref):
         """Resolve data reference in the form 'data.column', 'dataset_name.column', or just 'dataset_name'"""
+        if data_ref in self.variables:
+            print(f"[DEBUG] Found in variables: {data_ref}")
+            return self.variables[data_ref]
+        
         if data_ref in self.data:
             # Return the first numeric column as a default
             numeric_cols = self.data[data_ref].select_dtypes(include=[np.number]).columns
@@ -382,12 +386,18 @@ class PQLExecutor:
         """Execute a probability query P(X > value) or conditional P(A | B)"""
         print(f"[DEBUG] Received params: {params}")
         
+        
+        if isinstance(params, str):
+            params = params.split('//')[0]  # Remove comments
+            params = params.replace(');', '')  # Remove trailing );
+            params = params.strip()
+        
         if not params:
             return {'type': 'error', 'message': 'Invalid probability query'}
         
-        if isinstance(params, list):
-            params = params[0]
-        params = params.strip()
+        # if isinstance(params, list):
+        #     params = params[0]
+        # params = params.strip()
 
         # Check for conditional probability (A | B)
         if '|' in params:
@@ -399,25 +409,36 @@ class PQLExecutor:
 
         def parse_expression(expr):
             """Parses expressions like 'user.age > 20' into variable, op, value"""
+            expr = expr.strip()
             for op in ['>=', '<=', '==', '>', '<']:
                 if op in expr:
+                    parts = expr.split(op)
                     var, val = map(str.strip, expr.split(op))
-                    try:
-                        val = float(val)
-                    except ValueError:
-                        return None, None, None
-                    return var, op, val
+                    if len(parts) == 2:  # Ensure we have exactly two parts
+                        var = parts[0].strip()
+                        try:
+                            val = float(parts[1].strip())
+                            return var, op, val
+                        except ValueError:
+                            return None, None, None
             return expr.strip(), None, None  # No operator
 
         def resolve_data(var):
             """Tries to resolve data either directly or through reference"""
             if var in self.variables:
+                print(f"[DEBUG] Found {var} in variables")
                 return self.variables[var]
             else:
-                return self._resolve_data_reference(var)
+                print(f"[DEBUG] Attempting to resolve {var} as data reference")
+                data = self._resolve_data_reference(var)
+                print(f"[DEBUG] Data reference resolution result: {type(data)}")
+                return data
 
         # Parse target expression
         target_var, target_op, target_val = parse_expression(target_expr)
+        if target_var is None:
+            return {'type': 'error', 'message': f"Cannot parse expression '{target_expr}'"}
+        
         target_data = resolve_data(target_var)
         if target_data is None:
             return {'type': 'error', 'message': f"Cannot resolve variable '{target_var}'"}
