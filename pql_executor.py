@@ -80,6 +80,9 @@ class PQLExecutor:
                     result = self._execute_query(line)
                     results.append(result)
                 
+                elif line.startswith('classify'):
+                    result = self._execute_classification(line)
+                    results.append(result)
                 # print("[STATE AFTER] data:", self.data)
                 # print("[STATE AFTER] variables:", self.variables)
                 # print("[STATE AFTER] distributions:", self.distributions)
@@ -1026,15 +1029,75 @@ class PQLExecutor:
         except Exception as e:
             return {'type': 'error', 'message': f'Error in association rules: {str(e)}'}
     
+    # def _execute_classification(self, statement):
+    #     """Execute a classification statement"""
+    #     params = self._extract_params(statement)
+    #     if len(params) < 2:
+    #         return {'type': 'error', 'message': 'Invalid classification statement'}
+            
+    #     dataset_name = params[0].strip()
+        
+    #     # Parse options
+    #     options = {}
+    #     target = None
+    #     for param in params[1:]:
+    #         if ':' in param:
+    #             key, value = param.split(':', 1)
+    #             if key.strip() == 'target':
+    #                 target = value.strip()
+    #             else:
+    #                 options[key.strip()] = value.strip()
+        
+    #     if not target:
+    #         return {'type': 'error', 'message': 'Classification requires a target variable'}
+            
+    #     # Get classifier type
+    #     classifier_type = options.get('classifier', 'decision_tree')
+        
+    #     try:
+    #         if dataset_name in self.data:
+    #             data = self.data[dataset_name]
+                
+    #             if target in data.columns:
+    #                 # Mock classification results for demonstration
+    #                 return {
+    #                     'type': 'classification_result',
+    #                     'dataset': dataset_name,
+    #                     'target': target,
+    #                     'classifier': classifier_type,
+    #                     'accuracy': 0.85,
+    #                     'feature_importance': [
+    #                         {"feature": "feature1", "importance": 0.4},
+    #                         {"feature": "feature2", "importance": 0.3},
+    #                         {"feature": "feature3", "importance": 0.2}
+    #                     ],
+    #                     'confusion_matrix': [[45, 5], [10, 40]]
+    #                 }
+            
+    #         return {'type': 'error', 'message': f'Cannot perform classification on {dataset_name}'}
+            
+    #     except Exception as e:
+    #         return {'type': 'error', 'message': f'Error in classification: {str(e)}'}
+
     def _execute_classification(self, statement):
-        """Execute a classification statement"""
+        """Execute a classification statement using real classification models"""
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import LabelEncoder
+        from sklearn.metrics import accuracy_score, confusion_matrix
+        from sklearn.tree import DecisionTreeClassifier
+        from sklearn.naive_bayes import GaussianNB
+        from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC
+        from sklearn.neighbors import KNeighborsClassifier
+        import numpy as np
+
         params = self._extract_params(statement)
         if len(params) < 2:
             return {'type': 'error', 'message': 'Invalid classification statement'}
-            
+
         dataset_name = params[0].strip()
-        
-        # Parse options
+
         options = {}
         target = None
         for param in params[1:]:
@@ -1044,38 +1107,79 @@ class PQLExecutor:
                     target = value.strip()
                 else:
                     options[key.strip()] = value.strip()
-        
+
         if not target:
             return {'type': 'error', 'message': 'Classification requires a target variable'}
-            
-        # Get classifier type
+
         classifier_type = options.get('classifier', 'decision_tree')
-        
+
+        if dataset_name not in self.data:
+            return {'type': 'error', 'message': f'Dataset "{dataset_name}" not found'}
+
         try:
-            if dataset_name in self.data:
-                data = self.data[dataset_name]
-                
-                if target in data.columns:
-                    # Mock classification results for demonstration
-                    return {
-                        'type': 'classification_result',
-                        'dataset': dataset_name,
-                        'target': target,
-                        'classifier': classifier_type,
-                        'accuracy': 0.85,
-                        'feature_importance': [
-                            {"feature": "feature1", "importance": 0.4},
-                            {"feature": "feature2", "importance": 0.3},
-                            {"feature": "feature3", "importance": 0.2}
-                        ],
-                        'confusion_matrix': [[45, 5], [10, 40]]
-                    }
-            
-            return {'type': 'error', 'message': f'Cannot perform classification on {dataset_name}'}
-            
+            data = self.data[dataset_name]
+            if target not in data.columns:
+                return {'type': 'error', 'message': f'Target variable "{target}" not found in dataset'}
+
+            X = data.drop(columns=[target])
+            y = data[target]
+
+            X = X.fillna(0)
+            for col in X.select_dtypes(include='object').columns:
+                X[col] = LabelEncoder().fit_transform(X[col])
+
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+            if classifier_type == 'decision_tree':
+                model = DecisionTreeClassifier()
+            if classifier_type == 'j48':
+                model = DecisionTreeClassifier(criterion='entropy')
+            elif classifier_type == 'random_forest':
+                model = RandomForestClassifier()
+            elif classifier_type == 'logistic_regression':
+                model = LogisticRegression(max_iter=1000)
+            elif classifier_type == 'svm':
+                model = SVC()
+            elif classifier_type == 'gradient_boosting':
+                model = GradientBoostingClassifier()
+            elif classifier_type == 'naive_bayes':
+                model = GaussianNB()
+            elif classifier_type == 'knn':
+                model = KNeighborsClassifier()
+            else:
+                return {'type': 'error', 'message': f'Unsupported classifier: {classifier_type}'}
+
+            model.fit(X_train, y_train)
+
+            y_pred = model.predict(X_test)
+            acc = accuracy_score(y_test, y_pred)
+
+            importances = []
+            if hasattr(model, 'feature_importances_'):
+                importances = [
+                    {"feature": col, "importance": round(imp, 4)}
+                    for col, imp in zip(X.columns, model.feature_importances_)
+                ]
+
+            cm = confusion_matrix(y_test, y_pred)
+            labels = np.unique(y)
+            label_map = {i: str(label) for i, label in enumerate(labels)}
+
+            return {
+                'type': 'classification_result',
+                'dataset': dataset_name,
+                'target': target,
+                'classifier': classifier_type,
+                'accuracy': round(acc, 4),
+                'feature_importance': importances,
+                'confusion_matrix': cm.tolist(),
+                'label_mapping': label_map
+            }
+
         except Exception as e:
             return {'type': 'error', 'message': f'Error in classification: {str(e)}'}
 
+    
     def _generate_conditional_expectation_visualization(self, data, cond_data, mask, variable, condition, conditional_mean):
         """Generate visualization for conditional expectation query"""
         plt.figure(figsize=(8, 5))

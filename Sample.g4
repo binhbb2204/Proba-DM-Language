@@ -36,7 +36,7 @@ dataRef : DATA '.' IDENTIFIER ;
 
 queryStmt : QUERY queryExpr SEMICOLON ;
 queryExpr 
-    : 'P' '(' conditionalExpr ')'
+    : 'P' '(' expr ('|' conditionalExpr)? ')'
     | 'E' '(' expr ('|' conditionalExpr)? ')'
     | 'correlation' '(' expr ',' expr ')'
     | 'outliers' '(' expr (',' expr)* ')'

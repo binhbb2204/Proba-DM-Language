@@ -696,6 +696,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </tbody>
                                 </table>
                             </div>
+                            <h6>Confusion Matrix:</h6>
+                            <table class="result-table">
+                                <thead>
+                                    <tr>
+                                        <th>Actual / Predicted</th>
+                                        ${Object.values(result.label_mapping).map(label => `<th>${label}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${result.confusion_matrix.map((row, i) =>
+                                        `<tr>
+                                            <th>${result.label_mapping[i]}</th>
+                                            ${row.map(val => `<td>${val}</td>`).join('')}
+                                        </tr>`
+                                    ).join('')}
+                                </tbody>
+                            </table>
+                            
                         `;
                         break;
                         
